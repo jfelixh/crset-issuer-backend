@@ -1,59 +1,75 @@
 import { Alchemy, Network } from "alchemy-sdk";
 import dotenv from "dotenv";
 import { ethers } from "ethers";
+import { loadKZG } from "kzg-wasm";
 dotenv.config({ path: "../../.env" });
 
-let infuraProvider = new ethers.InfuraProvider(
-  "sepolia",
-  process.env.INFURA_API_KEY
-);
+type Blob = {
+  data: Uint8Array;
+  commitment: string;
+  proof: string;
+};
 
-export function blobHexToString(blobHex: string) {
-  // Step 1: Remove the '0x' prefix if it exists
-  if (blobHex.startsWith("0x")) {
-    blobHex = blobHex.slice(2);
-  }
+// Writer
+export async function blobFromData(
+  data: string,
+  blobSize = 128
+): Promise<Blob> {
+  const encoder = new TextEncoder();
+  data = "0x" + Buffer.from(data).toString("hex");
+  const rawData = encoder.encode(data);
 
-  // Step 2: Convert hex string to a Uint8Array
-  const byteArray = new Uint8Array(
-    blobHex.match(/.{1,2}/g)!.map((byte: string) => parseInt(byte, 16))
-  );
+  blobSize = blobSize * 1024; // blob input data must be 128 kB, otherwise infura provider will throw an error
+  const blobData = new Uint8Array(blobSize);
+  blobData.set(rawData, 0);
 
-  // Step 3: Decode the Uint8Array back to a string
-  const decoder = new TextDecoder();
-  return decoder.decode(byteArray);
+  // same data should be used for calculating commitment and proof, but kzg-wasm only supports strings as input
+  const blobHex =
+    "0x" +
+    Array.from(blobData)
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
+
+  return loadKZG()
+    .then((kzg) => {
+      let commitment = kzg.blobToKZGCommitment(blobHex);
+      let proof = kzg.computeBlobKZGProof(blobHex, commitment);
+      return { data: blobData, commitment: commitment, proof: proof };
+    })
+    .catch((err) => {
+      throw err;
+    });
 }
 
-export async function getBlobDataFromSenderAddress(
-  senderAddress: string
-): Promise<string> {
-  const config = {
-    apiKey: process.env.ALCHEMY_API_KEY,
-    network: Network.ETH_SEPOLIA,
-  };
-  const alchemy = new Alchemy(config);
+export async function sendBlob(data: string) {
+  const infuraProvider = new ethers.InfuraProvider(
+    "sepolia",
+    process.env.INFURA_API_KEY
+  );
+  const signer = new ethers.Wallet(process.env.PRIVATE_KEY!, infuraProvider);
 
-  const transfers = await alchemy.core
-    // @ts-ignore
-    .getAssetTransfers({
-      fromAddress: senderAddress,
-      toAddress: senderAddress,
-      category: ["external"],
-      order: "desc",
-    });
+  try {
+    const blob = await blobFromData(data);
+    const transaction = {
+      type: 3, // blob transaction type
+      to: process.env.ADDRESS, // send to one's self
+      value: ethers.parseEther("0.0001"), // send a tiny amount so the transaction can be found using Alchemy's Transfer API, only paid plans can use Trace API which includes 0 ETH TXs
+      gasLimit: 21000,
+      gasPrice: ethers.parseUnits("5", "gwei"),
+      blobGasPrice: ethers.parseUnits("5", "gwei"),
+      maxFeePerBlobGas: ethers.parseUnits("5", "gwei"),
+      blobs: [
+        { data: blob.data, commitment: blob.commitment, proof: blob.proof },
+      ],
+    };
 
-  const latestTxHash = transfers.transfers[0]!.hash;
-  const tx = await infuraProvider.getTransaction(latestTxHash);
-  const blobVersionedHash = tx?.blobVersionedHashes![0];
+    const tx = await signer.sendTransaction(transaction);
+    console.log(tx);
 
-  const blobData = await fetch(
-    `${process.env.BLOBSCAN_API_URL}${blobVersionedHash}/data`
-  ).then((response) => {
-    return response.text();
-  });
-
-  const preProcessedBlobData = blobHexToString(blobData.replace(/['"]+/g, ""));
-  const blobString = blobHexToString(preProcessedBlobData);
-
-  return blobString;
+    const receipt = await tx.wait();
+    return receipt;
+  } catch (error) {
+    console.error("Error sending blob transaction:", error);
+    throw error;
+  }
 }

@@ -1,7 +1,7 @@
 import { AccountId } from "caip";
 // import cryptoRandomString from "crypto-random-string";
-import { getBlobDataFromSenderAddress } from "src/utils/blob";
 import dotenv from "dotenv";
+import { sendBlob } from "src/utils/blob";
 dotenv.config({ path: "../../.env" });
 
 interface StatusEntry {
@@ -45,7 +45,7 @@ export function publishBFC(filter: any): { success: boolean; filter: any } {
   return { success: false, filter };
 }
 
-// Test function to check if blob data is being fetched correctly
-export function test() {
-  return getBlobDataFromSenderAddress(process.env.ADDRESS!);
+// Test function to check if data stored in the blob is being fetched correctly
+export async function testSend() {
+  return sendBlob("Hello World!");
 }

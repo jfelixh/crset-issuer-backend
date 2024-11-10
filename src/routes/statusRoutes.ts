@@ -4,8 +4,8 @@ import {
   createStatusEntry,
   publishBFC,
   revokeCredential,
+  testSend,
 } from "../services/statusService";
-import { getBlobDataFromSenderAddress } from "src/utils/blob";
 
 const router = Router();
 
@@ -40,8 +40,9 @@ router.post("/publishBFC", (req: Request, res: Response) => {
 
 // test route to check if the blob data is being fetched correctly
 router.get("/test", async (req: Request, res: Response) => {
-  const blobData = await getBlobDataFromSenderAddress(process.env.ADDRESS!);
-  res.status(200).json({ blobData });
+  const receipt = await testSend();
+  console.log(receipt);
+  res.status(200).json({ receipt });
 });
 
 export default router;
