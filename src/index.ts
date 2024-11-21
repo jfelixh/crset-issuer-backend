@@ -3,7 +3,7 @@ import dotenv from "dotenv";
 import express, { Express, Request, Response } from "express";
 import statusRoutes from "./routes/statusRoutes";
 
-dotenv.config({ path: "../.env" });
+dotenv.config({ path: ".env" });
 
 const app: Express = express();
 const port = process.env.PORT;
