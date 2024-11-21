@@ -17,17 +17,17 @@ router.post("/createStatusEntry", (req: Request, res: Response) => {
 });
 
 // revokes the credential
-router.post("/revokeCredential", (req: Request, res: Response) => {
+router.post("/revokeCredential", async (req: Request, res: Response) => {
   const { id } = req.query;
   if (!id) {
     res.status(400).json({ error: "Revocation ID is required" });
   }
 
-  const revoked = revokeCredential(id as string);
+  const revoked = await revokeCredential(id as string);
   if (revoked) {
     res.status(200).json({ message: "Credential revoked" });
   } else {
-    res.status(404).json({ error: "Revocation ID not found" });
+    res.status(404).json({ error: "Revocation ID not found / Credential was already revoked" });
   }
 });
 

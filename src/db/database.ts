@@ -64,7 +64,7 @@ export async function getIdsByStatus(db:sqlite.Database, status: string): Promis
 
     db.all('SELECT id FROM credentialStatus WHERE status = ?', [status], (err, rows: dbEntry[]) => {
       if (err) {
-        console.error('Error querying the database:', err.message);
+        console.error('Error getting IDs by status:', err.message);
         reject(err);
         return;
       }
@@ -73,6 +73,33 @@ export async function getIdsByStatus(db:sqlite.Database, status: string): Promis
       rows.forEach(row => ids.add(row.id));
       resolve(ids);
     })
+  });
+}
+
+export async function getStatusById(db:sqlite.Database, id: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    db.get('SELECT status FROM credentialStatus WHERE id = ?', [id], (err, row: dbEntry) => {
+      if (err) {
+        console.error('Error getting status of id:', err.message);
+        reject(err);
+        return;
+      }
+
+      resolve(row.status);
+    });
+  });
+}
+
+export async function updateStatusById(db:sqlite.Database, id: string, status: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    db.run('UPDATE credentialStatus SET status = ? WHERE id = ?', [status, id], (err) => {
+      if (err) {
+        console.error('Error updating status:', err.message);
+        reject(err);
+        return;
+      }
+      resolve();
+    });
   });
 }
 

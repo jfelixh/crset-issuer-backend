@@ -3,7 +3,7 @@ import * as bfc from "../../../padded-bloom-filter-cascade/src";
 import dotenv from "dotenv";
 import { sendBlobTransaction } from "src/utils/blob";
 import { randomString } from "src/utils/random-string";
-import { connectToDb, getIdsByStatus } from "../db/database";
+import {connectToDb, getIdsByStatus, getStatusById, updateStatusById} from "../db/database";
 
 dotenv.config({ path: "../../.env" });
 
@@ -19,6 +19,7 @@ interface StatusEntry {
 export function createStatusEntry(): StatusEntry {
   // Generates a unique ID for a new status entry
   const id = randomString();
+
   return {
     id,
     type: "BFCStatusEntry",
@@ -31,8 +32,20 @@ export function createStatusEntry(): StatusEntry {
 }
 
 // Revoke an existing credential by revocation ID
-export function revokeCredential(id: string): boolean {
-  // TODO
+export async function revokeCredential(id: string): Promise<boolean> {
+  const db = connectToDb("../db/bfc.sqlite");
+  console.log("here")
+  try {
+    const currentStatus = await getStatusById(db, id);
+    if (currentStatus === "Valid") {
+      await updateStatusById(db, id, "Invalid");
+      return true;
+    } else {
+      return false;
+    }
+  } catch (error) {
+    console.error("Error querying the database:", error);
+  }
   return false;
 }
 
@@ -43,7 +56,6 @@ export async function publishBFC() {
   try {
     const validSet = await getIdsByStatus(db, "Valid");
     const invalidSet = await getIdsByStatus(db, "Invalid");
-    console.log(validSet.size)
     const temp = bfc.constructBFC(validSet, invalidSet, validSet.size);
     const serializedData = bfc.toDataHexString(temp);
     sendBlobTransaction(process.env.INFURA_API_KEY!, process.env.PRIVATE_KEY!, process.env.ADDRESS!, serializedData)
@@ -69,4 +81,4 @@ export async function testSend() {
   );
 }
 
-publishBFC()
+// publishBFC()
