@@ -1,10 +1,9 @@
 import { AccountId } from "caip";
-import * as crypto from "crypto";
-import * as bfc from "../../../padded-bloom-filter-cascade/src"
-// import cryptoRandomString from "crypto-random-string";
+import * as bfc from "../../../padded-bloom-filter-cascade/src";
 import dotenv from "dotenv";
 import { sendBlobTransaction } from "src/utils/blob";
-import {connectToDb, dbEntry, getIdsByStatus} from "../db/database";
+import { randomString } from "src/utils/random-string";
+import { connectToDb, getIdsByStatus } from "../db/database";
 
 dotenv.config({ path: "../../.env" });
 
@@ -12,17 +11,14 @@ interface StatusEntry {
   id: string;
   type: "BFCStatusEntry";
   statusPurpose: "revocation";
-  statusPublisher: string; // CAIP-10
+  statusPublisher: string; // CAIP-10 Account ID
 }
 
-// Generates a unique ID for a new status entry
-function generateRevocationID(): string {
-  return crypto.randomBytes(32).toString("hex");
-}
 
-// Create a new status entry
+// Creates a new revocation status entry to be added to a VC before it is signed by the issuer.
 export function createStatusEntry(): StatusEntry {
-  const id = generateRevocationID();
+  // Generates a unique ID for a new status entry
+  const id = randomString();
   return {
     id,
     type: "BFCStatusEntry",
@@ -34,7 +30,7 @@ export function createStatusEntry(): StatusEntry {
   };
 }
 
-// Revoke an existing credential by ID
+// Revoke an existing credential by revocation ID
 export function revokeCredential(id: string): boolean {
   // TODO
   return false;
@@ -65,7 +61,12 @@ export async function publishBFC() {
 
 // Test function to check if data stored in the blob is being fetched correctly
 export async function testSend() {
-  return sendBlobTransaction(process.env.INFURA_API_KEY!, process.env.PRIVATE_KEY!, process.env.ADDRESS!, "Hello World!");
+  return sendBlobTransaction(
+    process.env.INFURA_API_KEY!,
+    process.env.PRIVATE_KEY!,
+    process.env.ADDRESS!,
+    "Hello World!"
+  );
 }
 
 publishBFC()
