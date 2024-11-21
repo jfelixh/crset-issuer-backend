@@ -33,8 +33,8 @@ router.post("/revokeCredential", (req: Request, res: Response) => {
 
 // constructs and publishes a new blob transaction with the filter
 router.post("/publishBFC", (req: Request, res: Response) => {
-  const filter = req.body;
-  const result = publishBFC(filter);
+  // const filter = req.body;
+  const result = publishBFC();
   res.status(200).json(result);
 });
 
