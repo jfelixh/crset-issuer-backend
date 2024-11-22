@@ -100,9 +100,9 @@ export async function sendBlobTransaction(
       type: 3, // blob transaction type
       to: receiverAddress, // send to one's self
       gasLimit: 21000,
-      gasPrice: ethers.parseUnits("2", "gwei"),
+      gasPrice: ethers.parseUnits("5", "gwei"),
       // blobGasPrice: ethers.parseUnits("5", "gwei"),
-      maxFeePerBlobGas: ethers.parseUnits("2", "gwei"),
+      maxFeePerBlobGas: ethers.parseUnits("5", "gwei"),
       blobs: blobs,
     };
 

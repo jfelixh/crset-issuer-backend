@@ -68,7 +68,10 @@ export async function publishBFC() {
     const validSet = await getIdsByStatus(db, "Valid");
     const invalidSet = await getIdsByStatus(db, "Invalid");
 
-    const temp = bfc.constructBFC(validSet, invalidSet, validSet.size);
+    // Calculate optimal rHat: rHat >= validSet.size AND rHat >= invalidSet.size / 2 (see pseudo code)
+    const rHat = validSet.size > invalidSet.size / 2 ? validSet.size : invalidSet.size / 2;
+
+    const temp = bfc.constructBFC(validSet, invalidSet, rHat);
     const serializedData = bfc.toDataHexString(temp);
 
     sendBlobTransaction(
