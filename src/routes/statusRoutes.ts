@@ -1,9 +1,10 @@
 import { Request, Response, Router } from "express";
 import {
-  createStatusEntry,
+  createStatusEntry, getStatusByIDWithDatabase,
   publishBFC,
   revokeCredential,
 } from "../services/statusService";
+import {getStatusById} from "../controllers/controller";
 
 const router = Router();
 
@@ -36,6 +37,12 @@ router.post("/publishBFC", async (req: Request, res: Response) => {
   // const filter = req.body;
   const result = await publishBFC();
   res.status(200).json(result);
+});
+
+router.post("/getStatus", async (req: Request, res: Response) => {
+  const { id } = req.query;
+  const result = await getStatusByIDWithDatabase(id as string);
+  res.status(200).json({ success: true, status: result });
 });
 
 export default router;

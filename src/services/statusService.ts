@@ -9,7 +9,7 @@ import {
 import { connectToDb } from "src/db/database";
 import { sendBlobTransaction } from "src/utils/blob";
 import { randomString } from "src/utils/random-string";
-import * as bfc from "../../../padded-bloom-filter-cascade/src";
+import * as bfc from "../../../../../padded-bloom-filter-cascade/src";
 dotenv.config({ path: "../../.env" });
 
 interface StatusEntry {
@@ -49,14 +49,24 @@ export async function revokeCredential(id: string): Promise<boolean> {
   try {
     const db = connectToDb(process.env.DB_LOCATION!);
     const currentStatus = await getStatusById(db, id);
-    if (currentStatus === "Valid") {
-      await updateStatusById(db, id, "Invalid");
+    if (currentStatus === "valid") {
+      await updateStatusById(db, id, "invalid");
       return true;
     } else {
       return false;
     }
   } catch (error) {
     console.error("Error querying the database:", error);
+  }
+  return false;
+}
+export async function getStatusByIDWithDatabase(id: string): Promise<boolean> {
+  try {
+    const db = connectToDb(process.env.DB_LOCATION!);
+    const currentStatus = await getStatusById(db, id);
+    return currentStatus === "valid";
+  } catch (error) {
+    console.error("Error occurred:", error);
   }
   return false;
 }
