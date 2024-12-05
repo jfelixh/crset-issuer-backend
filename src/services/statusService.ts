@@ -27,7 +27,7 @@ export async function createStatusEntry(): Promise<StatusEntry | null> {
       chainId: "eip155:1",
       address: process.env.ADDRESS!,
     }).toString();
-    const id = statusPublisher + randomString();
+    const id = statusPublisher + ":" + randomString();
     const insertedID = await insertStatusEntry(db, id, "Valid");
 
     if (insertedID) {
