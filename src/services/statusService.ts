@@ -13,10 +13,9 @@ import * as bfc from "../../../../../padded-bloom-filter-cascade/src";
 dotenv.config({ path: "../../.env" });
 
 interface StatusEntry {
-  id: string;
+  id: string; // CAIP-10 Account ID
   type: "BFCStatusEntry";
   statusPurpose: "revocation";
-  statusPublisher: string; // CAIP-10 Account ID
 }
 
 // Creates a new revocation status entry to be added to a VC before it is signed by the issuer.
@@ -24,7 +23,11 @@ export async function createStatusEntry(): Promise<StatusEntry | null> {
   try {
     const db = connectToDb(process.env.DB_LOCATION!);
     // Generates a unique ID for a new status entry
-    const id = randomString();
+    const statusPublisher = new AccountId({
+      chainId: "eip155:1",
+      address: process.env.ADDRESS!,
+    }).toString();
+    const id = statusPublisher + randomString();
     const insertedID = await insertStatusEntry(db, id, "Valid");
 
     if (insertedID) {
@@ -32,10 +35,6 @@ export async function createStatusEntry(): Promise<StatusEntry | null> {
         id,
         type: "BFCStatusEntry",
         statusPurpose: "revocation",
-        statusPublisher: new AccountId({
-          chainId: "eip155:1",
-          address: process.env.ADDRESS!,
-        }).toString(),
       };
     }
   } catch (error) {
@@ -79,7 +78,8 @@ export async function publishBFC() {
     const invalidSet = await getIdsByStatus(db, "Invalid");
 
     // Calculate optimal rHat: rHat >= validSet.size AND rHat >= invalidSet.size / 2 (see pseudo code)
-    const rHat = validSet.size > invalidSet.size / 2 ? validSet.size : invalidSet.size / 2;
+    const rHat =
+      validSet.size > invalidSet.size / 2 ? validSet.size : invalidSet.size / 2;
 
     const temp = bfc.constructBFC(validSet, invalidSet, rHat);
     const serializedData = bfc.toDataHexString(temp);
@@ -100,14 +100,4 @@ export async function publishBFC() {
   } catch (error) {
     console.error("Error querying the database:", error);
   }
-}
-
-// Test function to check if data stored in the blob is being fetched correctly
-export async function testSend() {
-  return sendBlobTransaction(
-    process.env.INFURA_API_KEY!,
-    process.env.PRIVATE_KEY!,
-    process.env.ADDRESS!,
-    "Hello World!"
-  );
 }
