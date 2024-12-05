@@ -1,6 +1,6 @@
 import { Request, Response, Router } from "express";
 import {
-  createStatusEntry, getStatusByIDWithDatabase,
+  createStatusEntry, getStatusByIDForUsers,
   publishBFC,
   revokeCredential,
 } from "../services/statusService";
@@ -41,7 +41,7 @@ router.post("/publishBFC", async (req: Request, res: Response) => {
 
 router.post("/getStatus", async (req: Request, res: Response) => {
   const { id } = req.query;
-  const result = await getStatusByIDWithDatabase(id as string);
+  const result = await getStatusByIDForUsers(id as string);
   res.status(200).json({ success: true, status: result });
 });
 

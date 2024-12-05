@@ -47,6 +47,7 @@ export async function createStatusEntry(): Promise<StatusEntry | null> {
 export async function revokeCredential(id: string): Promise<boolean> {
   try {
     const db = connectToDb(process.env.DB_LOCATION!);
+    console.log("Revoking credential with ID:", id);
     const currentStatus = await getStatusById(db, id);
     if (currentStatus === "valid") {
       await updateStatusById(db, id, "invalid");
@@ -59,7 +60,7 @@ export async function revokeCredential(id: string): Promise<boolean> {
   }
   return false;
 }
-export async function getStatusByIDWithDatabase(id: string): Promise<boolean> {
+export async function getStatusByIDForUsers(id: string): Promise<boolean> {
   try {
     const db = connectToDb(process.env.DB_LOCATION!);
     const currentStatus = await getStatusById(db, id);
@@ -73,9 +74,10 @@ export async function getStatusByIDWithDatabase(id: string): Promise<boolean> {
 // Publish BFC
 export async function publishBFC() {
   try {
+    console.log("Publishing BFC...");
     const db = connectToDb(process.env.DB_LOCATION!);
-    const validSet = await getIdsByStatus(db, "Valid");
-    const invalidSet = await getIdsByStatus(db, "Invalid");
+    const validSet = await getIdsByStatus(db, "valid");
+    const invalidSet = await getIdsByStatus(db, "invalid");
 
     // Calculate optimal rHat: rHat >= validSet.size AND rHat >= invalidSet.size / 2 (see pseudo code)
     const rHat =
