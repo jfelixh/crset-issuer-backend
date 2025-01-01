@@ -9,7 +9,7 @@ import {
 import { connectToDb } from "src/db/database";
 import { sendBlobTransaction } from "src/utils/blob";
 import { randomString } from "src/utils/random-string";
-import * as bfc from "../../../../../padded-bloom-filter-cascade/src";
+import * as bfc from "../../../padded-bloom-filter-cascade/src";
 dotenv.config({ path: "../../.env" });
 
 interface StatusEntry {
