@@ -1,6 +1,7 @@
 import dotenv from "dotenv";
 import { ethers, isAddress } from "ethers";
 import { loadKZG } from "kzg-wasm";
+import {emitter} from "../index";
 dotenv.config({ path: "../../.env" });
 
 type Blob = {
@@ -72,12 +73,15 @@ export async function sendBlobTransaction(
   APIKey: string,
   privateKey: string,
   receiverAddress: string,
-  data: string
+  data: string,
 ) {
+  if (!APIKey || !privateKey || !receiverAddress || !data) {
+    throw new Error("Missing required parameters");
+  }
   // TODO: adapt for >6 blobs => multiple transactions
   // TODO: allow user to choose provider
   const provider = new ethers.InfuraProvider("sepolia", APIKey);
-  const signer = new ethers.Wallet(privateKey, provider);
+  const wallet = new ethers.Wallet(privateKey, provider);
 
   // input validation
   if (!isAddress(receiverAddress)) {
@@ -88,30 +92,50 @@ export async function sendBlobTransaction(
   }
 
   try {
+    emitter?.emit('progress', {step: 'constructBlobs', status: 'started'});
     const blobs = await blobFromData(data, 128);
+    emitter?.emit('progress', {step: 'constructBlobs', status: 'completed', additionalMetrics: {blobCount: blobs.length}});
 
     if (blobs.length > 6) {
       // Maximum number of blobs per transaction is 6 (as of November 2024)
-      console.error("Error sending blob transaction: too many blobs");
-      return new Error("Error sending blob transaction: too many blobs");
+      console.error("Error sending blob transaction: too many blobs (>6), currently not supported");
+      return new Error("Error sending blob transaction: too many blobs (>6), currently not supported");
     }
 
+    emitter?.emit('progress', {step: 'constructTx', status: 'started'});
     const transaction = {
       type: 3, // blob transaction type
       to: receiverAddress, // send to one's self
-      gasLimit: 21000,
-      gasPrice: ethers.parseUnits("5", "gwei"),
-      // blobGasPrice: ethers.parseUnits("5", "gwei"),
-      maxFeePerBlobGas: ethers.parseUnits("5", "gwei"),
+      maxFeePerGas: ethers.parseUnits("20", "gwei"),
+      maxPriorityFeePerGas: ethers.parseUnits("1", "gwei"),
+      gasLimit: 500000,
+      maxFeePerBlobGas: ethers.parseUnits("100", "gwei"),
       blobs: blobs,
     };
+    emitter?.emit('progress', {step: 'constructTx', status: 'completed'});
 
-    const tx = await signer.sendTransaction(transaction);
-    console.log(`Sending TX ${tx.hash}, waiting for confirmation...`);
+    /* {
+      // There are transactions stuck in mempool if pendingNonce is greater than latestNonce
+      const pendingNonce = await provider.getTransactionCount(wallet.address, "pending");
+      const latestNonce = await provider.getTransactionCount(wallet.address, "latest");
+      console.log(`Pending Nonce: ${pendingNonce}, Latest Nonce: ${latestNonce}`);
+    } */
 
-    tx.wait().then((receipt) => {
-      console.log(`TX mined in block ${receipt!.blockNumber}`);
-    });
+    emitter?.emit('progress', {step: 'sendTx', status: 'started'});
+    const tx = await wallet.sendTransaction(transaction);
+    console.log(`Sending TX ${tx.hash}, waiting for confirmation...`)
+
+    let metrics = {txHash: tx.hash, blockNumber: 0, from: tx.from, to: tx.to, gasPrice: 0, gasUsed: 0, blobGasPrice: 0, blobGasUsed: 0};
+    const receipt = await tx.wait();
+    console.log(`TX mined in block ${receipt!.blockNumber}`);
+    metrics.blockNumber = receipt!.blockNumber;
+    metrics.gasPrice = Number(receipt!.gasPrice);
+    metrics.gasUsed = Number(receipt!.gasUsed);
+    metrics.blobGasPrice = Number(receipt!.blobGasPrice!);
+    metrics.blobGasUsed = Number(receipt!.blobGasUsed!);
+    
+    emitter?.emit('progress', {step: 'sendTx', status: 'completed', additionalMetrics: metrics});
+
     return;
   } catch (error) {
     console.error("Error sending blob transaction:", error);
