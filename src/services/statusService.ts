@@ -10,6 +10,8 @@ import { connectToDb } from "src/db/database";
 import { sendBlobTransaction } from "src/utils/blob";
 import { randomString } from "src/utils/random-string";
 import * as bfc from "../../../padded-bloom-filter-cascade/src";
+import { time } from "console";
+import { insertBfcLog } from "./bfcLogsService";
 dotenv.config({ path: "../../.env" });
 
 interface StatusEntry {
@@ -83,17 +85,40 @@ export async function publishBFC() {
     const rHat =
       validSet.size > invalidSet.size / 2 ? validSet.size : invalidSet.size / 2;
 
+    const startTimeConstruction = performance.now()
     const temp = bfc.constructBFC(validSet, invalidSet, rHat);
-    const serializedData = bfc.toDataHexString(temp);
+    const endTimeConstruction = performance.now()
+    const serializedData = bfc.toDataHexString([temp[0], temp[1]]);
 
+    const startTimePublishing = performance.now()
     sendBlobTransaction(
       process.env.INFURA_API_KEY!,
       process.env.PRIVATE_KEY!,
       process.env.ADDRESS!,
       serializedData
     )
-      .then(() => {
-        return { success: true, filter: temp[0] };
+      .then((result) => {
+        const endTimePublishing = performance.now()
+        
+        if (result){
+          insertBfcLog(db, {
+            validIdsSize: validSet.size,
+            invalidIdsSize: invalidSet.size,
+            serializedDataSize: serializedData.length,
+            constructionTimeInSec: Number(((endTimeConstruction - startTimeConstruction) / 1000).toFixed(4)),
+            publicationTimeInSec: Number(((endTimePublishing - startTimePublishing) / 1000).toFixed(4)),
+            numberOfBlobs: result.numberOfBlobs,
+            transactionHash: result.txHash,
+            blobVersionedHash: result.blobVersionedHashes,
+            publicationTimeStemp: new Date().toISOString(),
+            transactionCost: result.transactionCost,
+            calldataTotalCost: result.callDataTotalCost,
+            numberOfBfcLayers: temp[2],
+            rHat: rHat
+          })
+          return { success: true, filter: temp[0] };
+        }
+        console.log("Result from publishing is missing")
       })
       .catch((error: Error) => {
         console.error("Error publishing BFC:", error);

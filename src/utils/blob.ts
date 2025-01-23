@@ -1,6 +1,7 @@
 import dotenv from "dotenv";
 import { ethers, isAddress } from "ethers";
 import { loadKZG } from "kzg-wasm";
+import { calculateCallDataGasUsed } from "./hexToByte";
 dotenv.config({ path: "../../.env" });
 
 type Blob = {
@@ -73,7 +74,7 @@ export async function sendBlobTransaction(
   privateKey: string,
   receiverAddress: string,
   data: string
-) {
+) : Promise<{ numberOfBlobs: number; txHash: string; transactionCost: number; blobVersionedHashes: string[]; callDataTotalCost: number;}> {
   // TODO: adapt for >6 blobs => multiple transactions
   // TODO: allow user to choose provider
   const provider = new ethers.InfuraProvider("sepolia", APIKey);
@@ -93,7 +94,7 @@ export async function sendBlobTransaction(
     if (blobs.length > 6) {
       // Maximum number of blobs per transaction is 6 (as of November 2024)
       console.error("Error sending blob transaction: too many blobs");
-      return new Error("Error sending blob transaction: too many blobs");
+      throw new Error("Error sending blob transaction: too many blobs");
     }
 
     const transaction = {
@@ -109,12 +110,42 @@ export async function sendBlobTransaction(
     const tx = await signer.sendTransaction(transaction);
     console.log(`Sending TX ${tx.hash}, waiting for confirmation...`);
 
-    tx.wait().then((receipt) => {
-      console.log(`TX mined in block ${receipt!.blockNumber}`);
-    });
-    return;
-  } catch (error) {
-    console.error("Error sending blob transaction:", error);
-    throw error;
+    const receipt = await tx.wait(); 
+
+  if (receipt) {
+    console.log(`TX mined in block ${receipt.blockNumber}`);
+
+    
+    if (receipt) {
+        const block = await receipt.getBlock()
+        const baseFee = Number(block.baseFeePerGas)
+        const priorityFee = Number(tx.maxPriorityFeePerGas)
+        const blobData = blobs.flatMap(blob => blob.data);
+
+        const transactionCost = Number(receipt.gasUsed) * (baseFee + priorityFee) + Number(receipt.blobGasUsed) * Number(receipt.blobGasPrice);
+        const callDataGasUsed = calculateCallDataGasUsed(blobData)
+        const callDataTotalCost = (baseFee + priorityFee) * callDataGasUsed
+
+        console.log("Base fee: ", baseFee)
+        console.log("Max Priority fee: ", priorityFee)
+        console.log("Blob gas used: ", receipt.blobGasUsed)
+        console.log("Blob gas price: ", receipt.blobGasPrice)
+        
+      return {
+        numberOfBlobs: blobs.length,
+        txHash: tx.hash,
+        transactionCost: transactionCost,
+        blobVersionedHashes: tx.blobVersionedHashes || [],
+        callDataTotalCost: callDataTotalCost
+      };
+    } else {
+      throw new Error("Missing data for calculating transaction cost.");
+    }
+  } else {
+    throw new Error("Receipt is null or undefined.");
   }
+} catch (error) {
+  console.error("Error sending blob transaction:", error);
+  throw error; 
+}
 }

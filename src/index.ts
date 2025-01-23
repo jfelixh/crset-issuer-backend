@@ -2,6 +2,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import express, { Express, Request, Response } from "express";
 import statusRoutes from "./routes/statusRoutes";
+import bfcLogsRoutes from "./routes/bfcLogsRoutes";
 
 dotenv.config({ path: ".env" });
 
@@ -23,6 +24,7 @@ app.get("/api", (req: Request, res: Response) => {
 });
 
 app.use("/api/status", statusRoutes);
+app.use("/api/bfcLogs", bfcLogsRoutes);
 
 app.listen(port, () => {
   console.log(`[server]: Server is running at http://localhost:${port}`);
