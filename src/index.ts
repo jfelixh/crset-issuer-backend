@@ -1,10 +1,10 @@
 import cors from "cors";
 import dotenv from "dotenv";
-import express, { Express, Request, Response } from "express";
-import statusRoutes from "./routes/statusRoutes";
-import { WebSocketServer, WebSocket } from "ws";
 import { EventEmitter } from "events";
+import express, { Express } from "express";
+import { WebSocket, WebSocketServer } from "ws";
 import bfcLogsRoutes from "./routes/bfcLogsRoutes";
+import statusRoutes from "./routes/statusRoutes";
 
 dotenv.config({ path: ".env" });
 
@@ -34,17 +34,12 @@ wss.on("connection", (ws: WebSocket) => {
 
 app.use(
   cors({
-    // origin: "http://localhost:3000",
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
   })
 );
 
 app.use(express.json());
-
-app.get("/api", (req: Request, res: Response) => {
-  res.send("Hello World!");
-});
 
 app.use("/api/status", statusRoutes);
 app.use("/api/bfcLogs", bfcLogsRoutes);

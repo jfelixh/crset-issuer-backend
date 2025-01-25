@@ -1,5 +1,4 @@
 import { AccountId } from "caip";
-import dotenv from "dotenv";
 import * as process from "node:process";
 import { constructBFC, toDataHexString } from "padded-bloom-filter-cascade";
 import {
@@ -14,15 +13,11 @@ import { sendBlobTransaction } from "src/utils/blob";
 import { randomString } from "src/utils/random-string";
 import { emitter } from "../index";
 import { insertBfcLog } from "./bfcLogsService";
-dotenv.config({ path: "../../.env" });
 
 // Creates a new revocation status entry to be added to a VC before it is signed by the issuer.
 export async function createStatusEntry(): Promise<StatusEntry | null> {
   try {
-    if (!process.env.DB_LOCATION) {
-      throw new Error("No address provided");
-    }
-    const db = connectToDb(process.env.DB_LOCATION);
+    const db = connectToDb();
     // Generates a unique ID for a new status entry
     const statusPublisher = new AccountId({
       chainId: "eip155:1",
@@ -47,7 +42,7 @@ export async function createStatusEntry(): Promise<StatusEntry | null> {
 // Revoke an existing credential by revocation ID
 export async function revokeCredential(id: string): Promise<boolean> {
   try {
-    const db = connectToDb(process.env.DB_LOCATION!);
+    const db = connectToDb();
     const currentStatus = await getStatusById(db, id);
     if (currentStatus === "valid") {
       await updateStatusById(db, id, "invalid");
@@ -62,7 +57,7 @@ export async function revokeCredential(id: string): Promise<boolean> {
 }
 export async function getStatusByIDWithDatabase(id: string): Promise<boolean> {
   try {
-    const db = connectToDb(process.env.DB_LOCATION!);
+    const db = connectToDb();
     const currentStatus = await getStatusById(db, id);
     return currentStatus === "valid";
   } catch (error) {
@@ -77,12 +72,8 @@ export async function publishBFC(): Promise<{
   filter: any[];
 }> {
   try {
-    if (!process.env.DB_LOCATION) {
-      throw new Error("No db location provided or wrong dotenv config");
-    }
-
     emitter?.emit("progress", { step: "queryDB", status: "started" });
-    const db = connectToDb(process.env.DB_LOCATION);
+    const db = connectToDb();
     const validSet = await getIdsByStatus(db, "valid");
     const invalidSet = await getIdsByStatus(db, "invalid");
     emitter?.emit("progress", {

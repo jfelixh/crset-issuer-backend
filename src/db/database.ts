@@ -1,24 +1,31 @@
 import csv from "csv-parser";
+import dotenv from "dotenv";
 import * as fs from "node:fs";
-import * as sqlite from "sqlite3";
+import { open } from "sqlite";
+import { Database } from "sqlite3";
+dotenv.config({ path: "../../.env" });
 
-let db: sqlite.Database;
-
-export function connectToDb(databaseLocation: string) {
+export function connectToDb() {
+  const databaseLocation = process.env.DB_LOCATION;
   console.log("Connecting to SQLite database at path: ", databaseLocation);
-  if (!db) {
-    db = new sqlite.Database(databaseLocation, (err) => {
-      if (err) {
-        console.error("Error connecting to SQLite:", err.message);
-        return;
-      }
-      console.log("Connected to SQLite database.");
-    });
+  if (!databaseLocation) {
+    throw new Error("No database location provided");
   }
+  const db = new Database(databaseLocation);
   return db;
 }
 
-function createTable(db: sqlite.Database) {
+// Connect to the loans table SQLite database
+export const connectDB = async () => {
+  const db = await open({
+    filename: "./src/db/loans.db",
+    driver: Database,
+  });
+
+  return db;
+};
+
+function createTable(db: Database) {
   db.run(
     `CREATE TABLE IF NOT EXISTS credentialStatus(
         id TEXT PRIMARY KEY, 
@@ -34,7 +41,7 @@ function createTable(db: sqlite.Database) {
   );
 }
 
-function populateDb(db: sqlite.Database, filePath: string) {
+function populateDb(db: Database, filePath: string) {
   const insertStmt = db.prepare(
     "INSERT INTO credentialStatus (id, status) VALUES (?, ?)"
   );
@@ -63,9 +70,3 @@ function populateDb(db: sqlite.Database, filePath: string) {
       console.error("Error reading CSV file:", err.message);
     });
 }
-
-// export function initDB() {
-//   connectToDb("./src/db/bfc.db");
-//   createTable(db);
-//   populateDb(db, "/Users/evanchristopher/Downloads/idSet.csv");
-// }
