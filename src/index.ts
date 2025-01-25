@@ -1,10 +1,10 @@
+import bfcLogsRoutes from "@/routes/bfcLogsRoutes";
+import statusRoutes from "@/routes/statusRoutes";
 import cors from "cors";
 import dotenv from "dotenv";
 import { EventEmitter } from "events";
 import express, { Express } from "express";
 import { WebSocket, WebSocketServer } from "ws";
-import bfcLogsRoutes from "./routes/bfcLogsRoutes";
-import statusRoutes from "./routes/statusRoutes";
 
 dotenv.config({ path: ".env" });
 

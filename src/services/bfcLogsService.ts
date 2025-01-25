@@ -1,5 +1,5 @@
+import { BfcLogData } from "@/models/bfcLogs";
 import { Database } from "sqlite3";
-import { BfcLogData } from "src/models/bfcLogs";
 
 /**
  * Inserts a new BFC log entry into the database

@@ -1,10 +1,10 @@
-import { Request, Response, Router } from "express";
 import {
-  createStatusEntry, getStatusByIDWithDatabase,
+  createStatusEntry,
+  getStatusByIDWithDatabase,
   publishBFC,
   revokeCredential,
-} from "../services/statusService";
-import {getStatusById} from "../controllers/controller";
+} from "@/services/statusService";
+import { Request, Response, Router } from "express";
 
 const router = Router();
 

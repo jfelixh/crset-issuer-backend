@@ -1,8 +1,8 @@
-import * as sqlite from "sqlite3";
-import { DBEntry } from "src/models/statusEntry";
+import { DBEntry } from "@/models/statusEntry";
+import { Database } from "sqlite3";
 
 export async function getIdsByStatus(
-  db: sqlite.Database,
+  db: Database,
   status: string
 ): Promise<Set<string>> {
   return new Promise((resolve, reject) => {
@@ -26,10 +26,7 @@ export async function getIdsByStatus(
   });
 }
 
-export async function getStatusById(
-  db: sqlite.Database,
-  id: string
-): Promise<string> {
+export async function getStatusById(db: Database, id: string): Promise<string> {
   return new Promise((resolve, reject) => {
     db.get(
       "SELECT status FROM credentialStatus WHERE id = ?",
@@ -48,7 +45,7 @@ export async function getStatusById(
 }
 
 export async function updateStatusById(
-  db: sqlite.Database,
+  db: Database,
   id: string,
   status: string
 ): Promise<void> {
@@ -69,7 +66,7 @@ export async function updateStatusById(
 }
 
 export async function patchStatusById(
-  db: sqlite.Database,
+  db: Database,
   id: string,
   status: string
 ): Promise<boolean> {
@@ -95,7 +92,7 @@ export async function patchStatusById(
 }
 
 export async function insertStatusEntry(
-  db: sqlite.Database,
+  db: Database,
   id: string,
   status: string
 ): Promise<string> {

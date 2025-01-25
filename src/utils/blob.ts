@@ -1,7 +1,7 @@
 import dotenv from "dotenv";
 import { ethers, isAddress } from "ethers";
 import { loadKZG } from "kzg-wasm";
-import { emitter } from "../index";
+import { emitter } from "src";
 import { calculateCallDataGasUsed } from "./hexToByte";
 dotenv.config({ path: "../../.env" });
 

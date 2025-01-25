@@ -5,7 +5,13 @@
     "moduleDetection": "auto",
     "baseUrl": "./",
     "paths": {
-      // register paths here, e.g. "@utils/*": ["src/utils/*"]
+      "@/utils/*": ["src/utils/*"],
+      "@/models/*": ["src/models/*"],
+      "@/services/*": ["src/services/*"],
+      "@/controllers/*": ["src/controllers/*"],
+      "@/routes/*": ["src/routes/*"],
+      "@/db/*": ["src/db/*"],
+      "@/data/*": ["src/data/*"]
     },
     "outDir": "./dist",
     "esModuleInterop": true,
