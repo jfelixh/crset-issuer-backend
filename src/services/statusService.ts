@@ -24,7 +24,7 @@ export async function createStatusEntry(): Promise<StatusEntry | null> {
       address: process.env.ADDRESS!,
     }).toString();
     const id = statusPublisher + ":" + randomString();
-    const insertedID = await insertStatusEntry(db, id, "Valid");
+    const insertedID = await insertStatusEntry(db, id, 1);
 
     if (insertedID) {
       return {
@@ -44,8 +44,8 @@ export async function revokeCredential(id: string): Promise<boolean> {
   try {
     const db = connectToDb();
     const currentStatus = await getStatusById(db, id);
-    if (currentStatus === "valid") {
-      await updateStatusById(db, id, "invalid");
+    if (currentStatus === 1) {
+      await updateStatusById(db, id, 0);
       return true;
     } else {
       return false;
@@ -59,7 +59,7 @@ export async function getStatusByIDWithDatabase(id: string): Promise<boolean> {
   try {
     const db = connectToDb();
     const currentStatus = await getStatusById(db, id);
-    return currentStatus === "valid";
+    return currentStatus === 1;
   } catch (error) {
     console.error("Error occurred:", error);
   }
@@ -74,8 +74,8 @@ export async function publishBFC(): Promise<{
   try {
     emitter?.emit("progress", { step: "queryDB", status: "started" });
     const db = connectToDb();
-    const validSet = await getIdsByStatus(db, "valid");
-    const invalidSet = await getIdsByStatus(db, "invalid");
+    const validSet = await getIdsByStatus(db, 1);
+    const invalidSet = await getIdsByStatus(db, 0);
     emitter?.emit("progress", {
       step: "queryDB",
       status: "completed",
