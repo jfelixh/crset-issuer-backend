@@ -6,6 +6,7 @@ import { connectToDb } from "src/db/database";
 
 export async function getLogs(req: Request, res: Response): Promise<void> {
     try {
+        console.log("Fetching BFClogs...");
         const db = connectToDb(process.env.DB_LOCATION!);
         const logs = await getLogData(db);  
         res.status(200).json(logs);  

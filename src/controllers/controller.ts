@@ -30,7 +30,9 @@ export async function getStatusById(
     db: sqlite.Database,
     id: string
 ): Promise<string> {
+    console.log("Getting status of id:", id);
     return new Promise((resolve, reject) => {
+        console.log("Getting status of id:", id);
         db.get(
             "SELECT status FROM credentialStatus WHERE id = ?",
             [id],

@@ -88,7 +88,7 @@ export async function publishBFC() {
     const startTimeConstruction = performance.now()
     const temp = bfc.constructBFC(validSet, invalidSet, rHat);
     const endTimeConstruction = performance.now()
-    const serializedData = bfc.toDataHexString([temp[0], temp[1]]);
+    const serializedData = bfc.toDataHexString([temp[0], temp[1],temp[2]]);
 
     const startTimePublishing = performance.now()
     sendBlobTransaction(
@@ -113,7 +113,7 @@ export async function publishBFC() {
             publicationTimeStemp: new Date().toISOString(),
             transactionCost: result.transactionCost,
             calldataTotalCost: result.callDataTotalCost,
-            numberOfBfcLayers: temp[2],
+            numberOfBfcLayers: temp[2] as number,
             rHat: rHat
           })
           return { success: true, filter: temp[0] };
