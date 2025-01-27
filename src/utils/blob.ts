@@ -5,59 +5,101 @@ import { calculateCallDataGasUsed } from "./hexToByte";
 dotenv.config({ path: "../../.env" });
 
 type Blob = {
-  data: Uint8Array;
+  data: string;
   commitment: string;
   proof: string;
 };
 
+// Define the BLS12-381 field modulus (p)
+const FIELD_MODULUS = BigInt(
+    "52435875175126190479447740508185965837690552500527637822603658699938581184512"
+);
+
 /**
- * Partitions the input array into chunks of a specified size and pads the last chunk
- * @param inputArray - The input array to be partitioned
- * @param blobSize - The size of each blob in kilobytes
- * @returns An array of Uint8Arrays with the partitioned and padded input array
+ * Ensures all 32-byte scalars in a Uint8Array are canonical by adding padding
+ * to shift problematic segments out of the scalar boundaries.
+ * @param rawData - The original raw data as a Uint8Array
+ * @returns A Uint8Array with raw data and additional padding for canonicalization
  */
-function partitionArrayAndPad(
-  inputArray: Uint8Array,
-  blobSize: number
-): Uint8Array[] {
-  blobSize = blobSize * 1024; // Maximum hex characters per block including 0x prefix
-  const chunks = [];
-  for (let i = 0; i < inputArray.length; i += blobSize) {
-    const blobData = new Uint8Array(blobSize);
-    let block = inputArray.slice(i, i + blobSize);
-    blobData.set(block, 0); // Padding for last blob
-    chunks.push(blobData);
+function ensureCanonicalBlobs(rawData: Uint8Array): Uint8Array {
+  const scalarSize = 31; // Each scalar is 32 bytes, leave one byte for padding, 3.125% overhead
+  const canonicalData: Uint8Array[] = [];
+  let p = 0;
+
+  for (let i = 0; i < rawData.length; i += scalarSize) {
+    let segment = rawData.slice(i, i + scalarSize);
+
+    if (segment.length < scalarSize) {
+      // Pad the last segment to 32 bytes if it's shorter
+      const paddedSegment = new Uint8Array(scalarSize);
+      paddedSegment.set(segment);
+      segment = paddedSegment;
+    }
+
+    // Handle non-canonical scalar by adding 1-byte padding
+    const paddedSegment = new Uint8Array(scalarSize + 1); // Add 1-byte padding
+    paddedSegment.set(segment, 1); // Shift data by 1 byte
+    canonicalData.push(paddedSegment); // Truncate to 32 bytes
+    p=1;
+
   }
-  return chunks;
+  // Flatten the array of segments back into a single Uint8Array
+  return new Uint8Array(canonicalData.flatMap(val => Array.from(val)));
 }
 
 /**
- * Constructs valid blobs with the original hex string (each blob with corresponding KZG commitment and proof)
+ * Constructs valid blobs with the original hex string (each blob with corresponding KZG commitment and proof).
+ * The output blobs are canonical and preserve the original data.
  * @param data - The data to be written to the blockchain, in hex string format
  * @param blobSize - The size of each blob in kilobytes (128KB by default)
  * @returns A promise of an array of blobs with the data, KZG commitment, and proof
  */
 export async function blobFromData(
-  data: string,
-  blobSize = 128
+    data: string,
+    blobSize = 128
 ): Promise<Blob[]> {
-  const encoder = new TextEncoder();
-  data = Buffer.from(data).toString();
-  const rawData = encoder.encode(data);
-  const blobArrays = partitionArrayAndPad(rawData, blobSize);
+  if (data.startsWith("0x")) {
+    data = data.slice(2);
+  }
 
+  // Convert hex string to Uint8Array
+  const rawData = new Uint8Array(data.match(/.{1,2}/g)!.map((byte) => parseInt(byte, 16)));
+
+  // Ensure all blobs are canonical
+  const canonicalData = ensureCanonicalBlobs(rawData);
+
+  // Partition canonical data into blobs of specified size
+  const chunkSize = blobSize * 1024; // Blob size in bytes (e.g., 128 KB)
+  const scalarSize = 32; // Each scalar is 32 bytes
+  const blobArrays = [];
+  for (let i = 0; i < canonicalData.length; i += chunkSize) {
+    const chunk = canonicalData.slice(i, i + chunkSize);
+
+    // Check if the last scalar is incomplete
+    if (chunk.length !== chunkSize) {
+      const paddedChunk = new Uint8Array(chunkSize);
+      paddedChunk.set(chunk);
+      blobArrays.push(paddedChunk);
+    } else {
+      blobArrays.push(chunk);
+    }
+  }
+
+  // Generate blobs with KZG commitments and proofs
   const blobs: Blob[] = [];
   const kzg = await loadKZG();
-  for (let blobArray of blobArrays) {
+
+  for (const blobArray of blobArrays) {
     const blobHexString =
-      "0x" +
-      Array.from(blobArray)
-        .map((b) => b.toString(16).padStart(2, "0"))
-        .join("");
-    let commitment = kzg.blobToKZGCommitment(blobHexString);
-    let proof = kzg.computeBlobKZGProof(blobHexString, commitment);
-    const blob = { data: blobArray, commitment: commitment, proof: proof };
-    blobs.push(blob);
+        "0x" +
+        Array.from(blobArray)
+            .map((b) => b.toString(16).padStart(2, "0"))
+            .join("");
+
+    const commitment = kzg.blobToKZGCommitment(blobHexString);
+    const proof = kzg.computeBlobKZGProof(blobHexString, commitment);
+
+    blobs.push({ data: blobHexString, commitment, proof });
   }
   return blobs;
 }
@@ -123,7 +165,9 @@ export async function sendBlobTransaction(
         const blobData = blobs.flatMap(blob => blob.data);
 
         const transactionCost = Number(receipt.gasUsed) * (baseFee + priorityFee) + Number(receipt.blobGasUsed) * Number(receipt.blobGasPrice);
-        const callDataGasUsed = calculateCallDataGasUsed(blobData)
+      const callDataGasUsed = calculateCallDataGasUsed(
+          blobData.map((str) => new TextEncoder().encode(str))
+      );
         const callDataTotalCost = (baseFee + priorityFee) * callDataGasUsed
 
         console.log("Base fee: ", baseFee)

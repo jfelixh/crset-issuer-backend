@@ -66,7 +66,7 @@ export async function getStatusByIDForUsers(id: string): Promise<boolean> {
   try {
     const db = connectToDb(process.env.DB_LOCATION!);
     const currentStatus = await getStatusById(db, id);
-    return currentStatus === "valid";
+    return currentStatus.toLowerCase() === "valid";
   } catch (error) {
     console.error("Error occurred:", error);
   }
@@ -78,8 +78,8 @@ export async function publishBFC() {
   try {
     console.log("Publishing BFC...");
     const db = connectToDb(process.env.DB_LOCATION!);
-    const validSet = await getIdsByStatus(db, "valid");
-    const invalidSet = await getIdsByStatus(db, "invalid");
+    const validSet = await getIdsByStatus(db, "Valid");
+    const invalidSet = await getIdsByStatus(db, "Invalid");
 
     // Calculate optimal rHat: rHat >= validSet.size AND rHat >= invalidSet.size / 2 (see pseudo code)
     const rHat =
@@ -88,7 +88,7 @@ export async function publishBFC() {
     const startTimeConstruction = performance.now()
     const temp = bfc.constructBFC(validSet, invalidSet, rHat);
     const endTimeConstruction = performance.now()
-    const serializedData = bfc.toDataHexString([temp[0], temp[1],temp[2]]);
+    const serializedData = bfc.toDataHexString([temp[0], temp[1],temp[0].length]);
 
     const startTimePublishing = performance.now()
     sendBlobTransaction(
@@ -113,7 +113,7 @@ export async function publishBFC() {
             publicationTimeStemp: new Date().toISOString(),
             transactionCost: result.transactionCost,
             calldataTotalCost: result.callDataTotalCost,
-            numberOfBfcLayers: temp[2] as number,
+            numberOfBfcLayers: temp[0].length as number,
             rHat: rHat
           })
           return { success: true, filter: temp[0] };
