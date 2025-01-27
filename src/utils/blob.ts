@@ -3,7 +3,8 @@ import { ethers, isAddress } from "ethers";
 import { loadKZG } from "kzg-wasm";
 import {emitter} from "../index";
 import {BigNumber} from "alchemy-sdk";
-dotenv.config({ path: ".env" });
+import { calculateCallDataGasUsed } from "./hexToByte";
+dotenv.config({ path: "../../.env" });
 
 type Blob = {
   data: string;
@@ -36,13 +37,12 @@ function ensureCanonicalBlobs(rawData: Uint8Array): Uint8Array {
       paddedSegment.set(segment);
       segment = paddedSegment;
     } 
-    
+
     // Handle non-canonical scalar by adding 1-byte padding
     const paddedSegment = new Uint8Array(scalarSize + 1); // Add 1-byte padding
     paddedSegment.set(segment, 1); // Shift data by 1 byte
     canonicalData.push(paddedSegment); // Truncate to 32 bytes
     p=1;
-    
   }
   // Flatten the array of segments back into a single Uint8Array
   return new Uint8Array(canonicalData.flatMap(val => Array.from(val)));
@@ -116,8 +116,8 @@ export async function sendBlobTransaction(
   APIKey: string,
   privateKey: string,
   receiverAddress: string,
-  data: string,
-) {
+  data: string
+) : Promise<{ numberOfBlobs: number; txHash: string; transactionCost: number; blobVersionedHashes: string[]; callDataTotalCost: number;}> {
   if (!APIKey || !privateKey || !receiverAddress || !data) {
     throw new Error("Missing required parameters");
   }
@@ -170,18 +170,48 @@ export async function sendBlobTransaction(
 
     let metrics = {txHash: tx.hash, blockNumber: 0, from: tx.from, to: tx.to, gasPrice: 0, gasUsed: 0, blobGasPrice: 0, blobGasUsed: 0};
     const receipt = await tx.wait();
-    console.log(`TX mined in block ${receipt!.blockNumber}`);
-    metrics.blockNumber = receipt!.blockNumber;
+    if (receipt) {
+    console.log(`TX mined in block ${receipt.blockNumber}`);
+
+    
+    if (receipt) {
+      metrics.blockNumber = receipt!.blockNumber;
     metrics.gasPrice = Number(receipt!.gasPrice);
     metrics.gasUsed = Number(receipt!.gasUsed);
     metrics.blobGasPrice = Number(receipt!.blobGasPrice!);
     metrics.blobGasUsed = Number(receipt!.blobGasUsed!);
     
     emitter?.emit('progress', {step: 'sendTx', status: 'completed', additionalMetrics: metrics});
+        const block = await receipt.getBlock()
+        const baseFee = Number(block.baseFeePerGas)
+        const priorityFee = Number(tx.maxPriorityFeePerGas)
+        const blobData = blobs.flatMap(blob => blob.data);
 
-    return;
-  } catch (error) {
-    console.error("Error sending blob transaction:", error);
-    throw error;
+        const transactionCost = Number(receipt.gasUsed) * (baseFee + priorityFee) + Number(receipt.blobGasUsed) * Number(receipt.blobGasPrice);
+      const callDataGasUsed = calculateCallDataGasUsed(
+          blobData.map((str) => new TextEncoder().encode(str))
+      );
+        const callDataTotalCost = (baseFee + priorityFee) * callDataGasUsed
+
+        console.log("Base fee: ", baseFee)
+        console.log("Max Priority fee: ", priorityFee)
+        console.log("Blob gas used: ", receipt.blobGasUsed)
+        console.log("Blob gas price: ", receipt.blobGasPrice)
+        
+      return {
+        numberOfBlobs: blobs.length,
+        txHash: tx.hash,
+        transactionCost: transactionCost,
+        blobVersionedHashes: tx.blobVersionedHashes || [],
+        callDataTotalCost: callDataTotalCost
+      };
+    } else {
+      throw new Error("Missing data for calculating transaction cost.");
+    }
+  } else {
+    throw new Error("Receipt is null or undefined.");
   }
+} catch (error) {
+  console.error("Error sending blob transaction:", error);
+  throw error; 
 }

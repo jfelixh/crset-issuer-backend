@@ -4,6 +4,7 @@ import express, { Express, Request, Response } from "express";
 import statusRoutes from "./routes/statusRoutes";
 import {WebSocketServer, WebSocket} from "ws";
 import { EventEmitter } from "events";
+import bfcLogsRoutes from "./routes/bfcLogsRoutes";
 
 dotenv.config({ path: ".env" });
 
@@ -47,6 +48,7 @@ app.get("/api", (req: Request, res: Response) => {
 });
 
 app.use("/api/status", statusRoutes);
+app.use("/api/bfcLogs", bfcLogsRoutes);
 
 app.listen(port, () => {
   console.log(`[server]: Server is running at http://localhost:${port}`);
