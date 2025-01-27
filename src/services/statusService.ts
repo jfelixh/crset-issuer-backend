@@ -13,6 +13,14 @@ import * as process from "node:process";
 import { constructBFC, toDataHexString } from "padded-bloom-filter-cascade";
 import { emitter } from "../index";
 import { insertBfcLog } from "./bfcLogsService";
+import {EventEmitter} from "events";
+import { time } from "console";
+
+interface StatusEntry {
+  id: string; // CAIP-10 Account ID
+  type: "BFCStatusEntry";
+  statusPurpose: "revocation";
+}
 
 // Creates a new revocation status entry to be added to a VC before it is signed by the issuer.
 export async function createStatusEntry(): Promise<StatusEntry | null> {
@@ -42,6 +50,7 @@ export async function createStatusEntry(): Promise<StatusEntry | null> {
 // Revoke an existing credential by revocation ID
 export async function revokeCredential(id: string): Promise<boolean> {
   try {
+    console.log("Revoking credential with ID:", id);
     const db = connectToDb();
     const currentStatus = await getStatusById(db, id);
     if (currentStatus === 1) {
@@ -55,7 +64,8 @@ export async function revokeCredential(id: string): Promise<boolean> {
   }
   return false;
 }
-export async function getStatusByIDWithDatabase(id: string): Promise<boolean> {
+
+export async function getStatusByIDForUsers(id: string): Promise<boolean> {
   try {
     const db = connectToDb();
     const currentStatus = await getStatusById(db, id);
@@ -89,22 +99,23 @@ export async function publishBFC(): Promise<{
     const rHat =
       validSet.size > invalidSet.size / 2 ? validSet.size : invalidSet.size / 2;
 
+
     emitter?.emit("progress", { step: "constructBFC", status: "started" });
     const startTimeConstruction = performance.now();
-    const temp = constructBFC(validSet, invalidSet, rHat);
+    const [serializedBFC, salt] = constructBFC(validSet, invalidSet, rHat);
     emitter?.emit("progress", {
       step: "constructBFC",
       status: "completed",
-      additionalMetrics: { levelCount: temp.length },
+      additionalMetrics: { levelCount: serializedBFC.length },
     });
     emitter?.emit("progress", { step: "serializeBFC", status: "started" });
     const endTimeConstruction = performance.now();
-    const serializedData = toDataHexString([temp[0], temp[1]]);
+    const serializedData = toDataHexString([serializedBFC, salt]]);
     emitter?.emit("progress", {
       step: "serializeBFC",
       status: "completed",
       additionalMetrics: {
-        serializedDataSize: serializedData.length / 2 / 1000,
+        serializedDataSize: serializedData.length / 2,
       },
     });
 

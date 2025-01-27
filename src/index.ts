@@ -3,6 +3,7 @@ import statusRoutes from "@/routes/statusRoutes";
 import cors from "cors";
 import dotenv from "dotenv";
 import { EventEmitter } from "events";
+import bfcLogsRoutes from "./routes/bfcLogsRoutes";
 import express, { Express } from "express";
 import { WebSocket, WebSocketServer } from "ws";
 
