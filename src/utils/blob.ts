@@ -117,19 +117,12 @@ export async function sendBlobTransaction(
 
     
     if (receipt) {
-        const block = await receipt.getBlock()
-        const baseFee = Number(block.baseFeePerGas)
-        const priorityFee = Number(tx.maxPriorityFeePerGas)
         const blobData = blobs.flatMap(blob => blob.data);
 
-        const transactionCost = Number(receipt.gasUsed) * (baseFee + priorityFee) + Number(receipt.blobGasUsed) * Number(receipt.blobGasPrice);
+        const transactionCost = (Number(receipt.gasUsed) * Number(receipt.gasPrice) + Number(receipt.blobGasUsed) * Number(receipt.blobGasPrice)) / 10**18; // in ether
         const callDataGasUsed = calculateCallDataGasUsed(blobData)
-        const callDataTotalCost = (baseFee + priorityFee) * callDataGasUsed
+        const callDataTotalCost = (Number(receipt.gasPrice) * callDataGasUsed) / 10**18; // in ether
 
-        console.log("Base fee: ", baseFee)
-        console.log("Max Priority fee: ", priorityFee)
-        console.log("Blob gas used: ", receipt.blobGasUsed)
-        console.log("Blob gas price: ", receipt.blobGasPrice)
         
       return {
         numberOfBlobs: blobs.length,

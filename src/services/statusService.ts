@@ -88,7 +88,7 @@ export async function publishBFC() {
     const startTimeConstruction = performance.now()
     const temp = bfc.constructBFC(validSet, invalidSet, rHat);
     const endTimeConstruction = performance.now()
-    const serializedData = bfc.toDataHexString([temp[0], temp[1],temp[2]]);
+    const serializedData = bfc.toDataHexString([temp[0], temp[1]]);
 
     const startTimePublishing = performance.now()
     sendBlobTransaction(
@@ -104,7 +104,7 @@ export async function publishBFC() {
           insertBfcLog(db, {
             validIdsSize: validSet.size,
             invalidIdsSize: invalidSet.size,
-            serializedDataSize: serializedData.length,
+            serializedDataSize: Math.ceil(serializedData.length / 2), // in bytes
             constructionTimeInSec: Number(((endTimeConstruction - startTimeConstruction) / 1000).toFixed(4)),
             publicationTimeInSec: Number(((endTimePublishing - startTimePublishing) / 1000).toFixed(4)),
             numberOfBlobs: result.numberOfBlobs,
