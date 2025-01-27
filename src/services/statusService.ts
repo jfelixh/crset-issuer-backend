@@ -15,6 +15,7 @@ import {EventEmitter} from "events";
 import {emitter} from "../index";
 dotenv.config({ path: "../../.env" });
 
+console.log(process.env.DB_LOCATION);
 interface StatusEntry {
   id: string; // CAIP-10 Account ID
   type: "BFCStatusEntry";
@@ -94,11 +95,11 @@ export async function publishBFC(): Promise<{ success: boolean, filter: any }> {
       validSet.size > invalidSet.size / 2 ? validSet.size : invalidSet.size / 2;
 
     emitter?.emit('progress', {step: 'constructBFC', status: 'started'});
-    const temp = bfc.constructBFC(validSet, invalidSet, rHat);
-    emitter?.emit('progress', {step: 'constructBFC', status: 'completed', additionalMetrics: {levelCount: temp.length}});
+    const [serializedBFC, salt] = bfc.constructBFC(validSet, invalidSet, rHat);
+    emitter?.emit('progress', {step: 'constructBFC', status: 'completed', additionalMetrics: {levelCount: serializedBFC.length}});
     emitter?.emit('progress', {step: 'serializeBFC', status: 'started'});
-    const serializedData = bfc.toDataHexString(temp);
-    emitter?.emit('progress', {step: 'serializeBFC', status: 'completed', additionalMetrics: {serializedDataSize: serializedData.length/2/1000}});
+    const serializedData = bfc.toDataHexString([serializedBFC, salt]);
+    emitter?.emit('progress', {step: 'serializeBFC', status: 'completed', additionalMetrics: {serializedDataSize: serializedData.length/2}});
 
     return sendBlobTransaction(
       process.env.INFURA_API_KEY!,
@@ -107,11 +108,11 @@ export async function publishBFC(): Promise<{ success: boolean, filter: any }> {
       serializedData
     )
       .then(() => {
-        return { success: true, filter: temp[0] };
+        return { success: true, filter: serializedBFC };
       })
       .catch((error: Error) => {
         console.error("Error publishing BFC:", error);
-        return { success: false, filter: temp[0] };
+        return { success: false, filter: serializedBFC };
       });
   } catch (error) {
     console.error("Error querying the database:", error);
