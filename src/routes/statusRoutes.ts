@@ -1,6 +1,7 @@
 import { Request, Response, Router } from "express";
 import {
-  createStatusEntry, getStatusByIDForUsers,
+  createStatusEntry, 
+  getStatusByIDForUsers,
   publishBFC,
   revokeCredential,
 } from "../services/statusService";

@@ -1,4 +1,5 @@
 import * as sqlite from "sqlite3";
+
 import {DBEntry} from "src/models/statusEntry";
 
 export async function getIdsByStatus(

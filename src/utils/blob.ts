@@ -1,6 +1,8 @@
 import dotenv from "dotenv";
 import { ethers, isAddress } from "ethers";
 import { loadKZG } from "kzg-wasm";
+import {emitter} from "../index";
+import {BigNumber} from "alchemy-sdk";
 import { calculateCallDataGasUsed } from "./hexToByte";
 dotenv.config({ path: "../../.env" });
 
@@ -12,7 +14,7 @@ type Blob = {
 
 // Define the BLS12-381 field modulus (p)
 const FIELD_MODULUS = BigInt(
-    "52435875175126190479447740508185965837690552500527637822603658699938581184512"
+  "52435875175126190479447740508185965837690552500527637822603658699938581184512"
 );
 
 /**
@@ -34,14 +36,13 @@ function ensureCanonicalBlobs(rawData: Uint8Array): Uint8Array {
       const paddedSegment = new Uint8Array(scalarSize);
       paddedSegment.set(segment);
       segment = paddedSegment;
-    }
+    } 
 
     // Handle non-canonical scalar by adding 1-byte padding
     const paddedSegment = new Uint8Array(scalarSize + 1); // Add 1-byte padding
     paddedSegment.set(segment, 1); // Shift data by 1 byte
     canonicalData.push(paddedSegment); // Truncate to 32 bytes
     p=1;
-
   }
   // Flatten the array of segments back into a single Uint8Array
   return new Uint8Array(canonicalData.flatMap(val => Array.from(val)));
@@ -55,8 +56,8 @@ function ensureCanonicalBlobs(rawData: Uint8Array): Uint8Array {
  * @returns A promise of an array of blobs with the data, KZG commitment, and proof
  */
 export async function blobFromData(
-    data: string,
-    blobSize = 128
+  data: string,
+  blobSize = 128
 ): Promise<Blob[]> {
   if (data.startsWith("0x")) {
     data = data.slice(2);
@@ -91,10 +92,10 @@ export async function blobFromData(
 
   for (const blobArray of blobArrays) {
     const blobHexString =
-        "0x" +
-        Array.from(blobArray)
-            .map((b) => b.toString(16).padStart(2, "0"))
-            .join("");
+      "0x" +
+      Array.from(blobArray)
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join("");
 
     const commitment = kzg.blobToKZGCommitment(blobHexString);
     const proof = kzg.computeBlobKZGProof(blobHexString, commitment);
@@ -117,10 +118,13 @@ export async function sendBlobTransaction(
   receiverAddress: string,
   data: string
 ) : Promise<{ numberOfBlobs: number; txHash: string; transactionCost: number; blobVersionedHashes: string[]; callDataTotalCost: number;}> {
+  if (!APIKey || !privateKey || !receiverAddress || !data) {
+    throw new Error("Missing required parameters");
+  }
   // TODO: adapt for >6 blobs => multiple transactions
   // TODO: allow user to choose provider
   const provider = new ethers.InfuraProvider("sepolia", APIKey);
-  const signer = new ethers.Wallet(privateKey, provider);
+  const wallet = new ethers.Wallet(privateKey, provider);
 
   // input validation
   if (!isAddress(receiverAddress)) {
@@ -131,34 +135,53 @@ export async function sendBlobTransaction(
   }
 
   try {
+    emitter?.emit('progress', {step: 'constructBlobs', status: 'started'});
     const blobs = await blobFromData(data, 128);
+    emitter?.emit('progress', {step: 'constructBlobs', status: 'completed', additionalMetrics: {blobCount: blobs.length}});
 
     if (blobs.length > 6) {
       // Maximum number of blobs per transaction is 6 (as of November 2024)
-      console.error("Error sending blob transaction: too many blobs");
-      throw new Error("Error sending blob transaction: too many blobs");
+      console.error("Error sending blob transaction: too many blobs (>6), currently not supported");
+      return new Error("Error sending blob transaction: too many blobs (>6), currently not supported");
     }
 
+    emitter?.emit('progress', {step: 'constructTx', status: 'started'});
     const transaction = {
       type: 3, // blob transaction type
       to: receiverAddress, // send to one's self
-      gasLimit: 21000,
-      gasPrice: ethers.parseUnits("5", "gwei"),
-      // blobGasPrice: ethers.parseUnits("5", "gwei"),
-      maxFeePerBlobGas: ethers.parseUnits("5", "gwei"),
+      maxFeePerGas: ethers.parseUnits("80", "gwei"),
+      maxPriorityFeePerGas: ethers.parseUnits("10", "gwei"),
+      gasLimit: 500000,
+      maxFeePerBlobGas: ethers.parseUnits("100", "gwei"),
       blobs: blobs,
     };
+    emitter?.emit('progress', {step: 'constructTx', status: 'completed'});
 
-    const tx = await signer.sendTransaction(transaction);
-    console.log(`Sending TX ${tx.hash}, waiting for confirmation...`);
+    /* {
+      // There are transactions stuck in mempool if pendingNonce is greater than latestNonce
+      const pendingNonce = await provider.getTransactionCount(wallet.address, "pending");
+      const latestNonce = await provider.getTransactionCount(wallet.address, "latest");
+      console.log(`Pending Nonce: ${pendingNonce}, Latest Nonce: ${latestNonce}`);
+    } */
 
-    const receipt = await tx.wait(); 
+    emitter?.emit('progress', {step: 'sendTx', status: 'started'});
+    const tx = await wallet.sendTransaction(transaction);
+    console.log(`Sending TX ${tx.hash}, waiting for confirmation...`)
 
-  if (receipt) {
+    let metrics = {txHash: tx.hash, blockNumber: 0, from: tx.from, to: tx.to, gasPrice: 0, gasUsed: 0, blobGasPrice: 0, blobGasUsed: 0};
+    const receipt = await tx.wait();
+    if (receipt) {
     console.log(`TX mined in block ${receipt.blockNumber}`);
 
     
     if (receipt) {
+      metrics.blockNumber = receipt!.blockNumber;
+    metrics.gasPrice = Number(receipt!.gasPrice);
+    metrics.gasUsed = Number(receipt!.gasUsed);
+    metrics.blobGasPrice = Number(receipt!.blobGasPrice!);
+    metrics.blobGasUsed = Number(receipt!.blobGasUsed!);
+    
+    emitter?.emit('progress', {step: 'sendTx', status: 'completed', additionalMetrics: metrics});
         const block = await receipt.getBlock()
         const baseFee = Number(block.baseFeePerGas)
         const priorityFee = Number(tx.maxPriorityFeePerGas)
@@ -191,5 +214,4 @@ export async function sendBlobTransaction(
 } catch (error) {
   console.error("Error sending blob transaction:", error);
   throw error; 
-}
 }
