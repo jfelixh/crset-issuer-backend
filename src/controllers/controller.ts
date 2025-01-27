@@ -1,10 +1,9 @@
-import * as sqlite from "sqlite3";
-
-import {DBEntry} from "src/models/statusEntry";
+import { DBEntry } from "@/models/statusEntry";
+import { Database } from "sqlite3";
 
 export async function getIdsByStatus(
-    db: sqlite.Database,
-    status: string
+  db: Database,
+  status: 0 | 1,
 ): Promise<Set<string>> {
     return new Promise((resolve, reject) => {
         const ids = new Set<string>();
@@ -27,32 +26,28 @@ export async function getIdsByStatus(
     });
 }
 
-export async function getStatusById(
-    db: sqlite.Database,
-    id: string
-): Promise<string> {
-    console.log("Getting status of id:", id);
-    return new Promise((resolve, reject) => {
-        console.log("Getting status of id:", id);
-        db.get(
-            "SELECT status FROM credentialStatus WHERE id = ?",
-            [id],
-            (err, row: DBEntry) => {
-                if (err) {
-                    console.error("Error getting status of id:", err.message);
-                    reject(err);
-                    return;
-                }
-                resolve(row.status);
-            }
-        );
-    });
+export async function getStatusById(db: Database, id: string): Promise<number> {
+  return new Promise((resolve, reject) => {
+    db.get(
+      "SELECT status FROM credentialStatus WHERE id = ?",
+      [id],
+      (err, row: DBEntry) => {
+        if (err) {
+          console.error("Error getting status of id:", err.message);
+          reject(err);
+          return;
+        }
+
+        resolve(row.status);
+      }
+    );
+  });
 }
 
 export async function updateStatusById(
-    db: sqlite.Database,
-    id: string,
-    status: string
+  db: Database,
+  id: string,
+  status: 0 | 1
 ): Promise<void> {
     return new Promise((resolve, reject) => {
         db.run(
@@ -71,9 +66,9 @@ export async function updateStatusById(
 }
 
 export async function patchStatusById(
-    db: sqlite.Database,
-    id: string,
-    status: string
+  db: Database,
+  id: string,
+  status: 0 | 1
 ): Promise<boolean> {
     return new Promise((resolve, reject) => {
         db.run(
@@ -97,9 +92,9 @@ export async function patchStatusById(
 }
 
 export async function insertStatusEntry(
-    db: sqlite.Database,
-    id: string,
-    status: string
+  db: Database,
+  id: string,
+  status: 0 | 1,
 ): Promise<string> {
     return new Promise((resolve, reject) => {
         db.run(

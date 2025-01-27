@@ -1,8 +1,8 @@
 import dotenv from "dotenv";
 import { ethers, isAddress } from "ethers";
 import { loadKZG } from "kzg-wasm";
-import {emitter} from "../index";
 import {BigNumber} from "alchemy-sdk";
+import { emitter } from "src";
 import { calculateCallDataGasUsed } from "./hexToByte";
 dotenv.config({ path: "../../.env" });
 
@@ -117,7 +117,13 @@ export async function sendBlobTransaction(
   privateKey: string,
   receiverAddress: string,
   data: string
-) : Promise<{ numberOfBlobs: number; txHash: string; transactionCost: number; blobVersionedHashes: string[]; callDataTotalCost: number;}> {
+): Promise<{
+  numberOfBlobs: number;
+  txHash: string;
+  transactionCost: number;
+  blobVersionedHashes: string[];
+  callDataTotalCost: number;
+}> {
   if (!APIKey || !privateKey || !receiverAddress || !data) {
     throw new Error("Missing required parameters");
   }
@@ -135,17 +141,25 @@ export async function sendBlobTransaction(
   }
 
   try {
-    emitter?.emit('progress', {step: 'constructBlobs', status: 'started'});
+    emitter?.emit("progress", { step: "constructBlobs", status: "started" });
     const blobs = await blobFromData(data, 128);
-    emitter?.emit('progress', {step: 'constructBlobs', status: 'completed', additionalMetrics: {blobCount: blobs.length}});
+    emitter?.emit("progress", {
+      step: "constructBlobs",
+      status: "completed",
+      additionalMetrics: { blobCount: blobs.length },
+    });
 
     if (blobs.length > 6) {
       // Maximum number of blobs per transaction is 6 (as of November 2024)
-      console.error("Error sending blob transaction: too many blobs (>6), currently not supported");
-      return new Error("Error sending blob transaction: too many blobs (>6), currently not supported");
+      console.error(
+        "Error sending blob transaction: too many blobs (>6), currently not supported"
+      );
+      throw new Error(
+        "Error sending blob transaction: too many blobs (>6), currently not supported"
+      );
     }
 
-    emitter?.emit('progress', {step: 'constructTx', status: 'started'});
+    emitter?.emit("progress", { step: "constructTx", status: "started" });
     const transaction = {
       type: 3, // blob transaction type
       to: receiverAddress, // send to one's self
@@ -155,7 +169,7 @@ export async function sendBlobTransaction(
       maxFeePerBlobGas: ethers.parseUnits("100", "gwei"),
       blobs: blobs,
     };
-    emitter?.emit('progress', {step: 'constructTx', status: 'completed'});
+    emitter?.emit("progress", { step: "constructTx", status: "completed" });
 
     /* {
       // There are transactions stuck in mempool if pendingNonce is greater than latestNonce
@@ -164,11 +178,20 @@ export async function sendBlobTransaction(
       console.log(`Pending Nonce: ${pendingNonce}, Latest Nonce: ${latestNonce}`);
     } */
 
-    emitter?.emit('progress', {step: 'sendTx', status: 'started'});
+    emitter?.emit("progress", { step: "sendTx", status: "started" });
     const tx = await wallet.sendTransaction(transaction);
-    console.log(`Sending TX ${tx.hash}, waiting for confirmation...`)
+    console.log(`Sending TX ${tx.hash}, waiting for confirmation...`);
 
-    let metrics = {txHash: tx.hash, blockNumber: 0, from: tx.from, to: tx.to, gasPrice: 0, gasUsed: 0, blobGasPrice: 0, blobGasUsed: 0};
+    let metrics = {
+      txHash: tx.hash,
+      blockNumber: 0,
+      from: tx.from,
+      to: tx.to,
+      gasPrice: 0,
+      gasUsed: 0,
+      blobGasPrice: 0,
+      blobGasUsed: 0,
+    };
     const receipt = await tx.wait();
     if (receipt) {
     console.log(`TX mined in block ${receipt.blockNumber}`);
@@ -180,36 +203,25 @@ export async function sendBlobTransaction(
     metrics.gasUsed = Number(receipt!.gasUsed);
     metrics.blobGasPrice = Number(receipt!.blobGasPrice!);
     metrics.blobGasUsed = Number(receipt!.blobGasUsed!);
-    
-    emitter?.emit('progress', {step: 'sendTx', status: 'completed', additionalMetrics: metrics});
-        const block = await receipt.getBlock()
-        const baseFee = Number(block.baseFeePerGas)
-        const priorityFee = Number(tx.maxPriorityFeePerGas)
-        const blobData = blobs.flatMap(blob => blob.data);
 
-        const transactionCost = Number(receipt.gasUsed) * (baseFee + priorityFee) + Number(receipt.blobGasUsed) * Number(receipt.blobGasPrice);
-      const callDataGasUsed = calculateCallDataGasUsed(
-          blobData.map((str) => new TextEncoder().encode(str))
-      );
-        const callDataTotalCost = (baseFee + priorityFee) * callDataGasUsed
+    emitter?.emit("progress", {
+      step: "sendTx",
+      status: "completed",
+      additionalMetrics: metrics,
+    });
 
-        console.log("Base fee: ", baseFee)
-        console.log("Max Priority fee: ", priorityFee)
-        console.log("Blob gas used: ", receipt.blobGasUsed)
-        console.log("Blob gas price: ", receipt.blobGasPrice)
-        
-      return {
-        numberOfBlobs: blobs.length,
-        txHash: tx.hash,
-        transactionCost: transactionCost,
-        blobVersionedHashes: tx.blobVersionedHashes || [],
-        callDataTotalCost: callDataTotalCost
-      };
-    } else {
-      throw new Error("Missing data for calculating transaction cost.");
-    }
-  } else {
-    throw new Error("Receipt is null or undefined.");
+    return {
+      numberOfBlobs: blobs.length,
+      txHash: tx.hash,
+      transactionCost: metrics.gasPrice * metrics.gasUsed,
+      blobVersionedHashes: blobs.map((blob) => blob.commitment),
+      callDataTotalCost: calculateCallDataGasUsed([
+        new TextEncoder().encode(data),
+      ]),
+    };
+  } catch (error) {
+    console.error("Error sending blob transaction:", error);
+    throw error;
   }
 } catch (error) {
   console.error("Error sending blob transaction:", error);

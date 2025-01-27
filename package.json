@@ -2,16 +2,15 @@
   "name": "bfc-status-issuer-backend",
   "version": "1.0.0",
   "description": "A backend service that handles VC ids and their status for issuers.",
-  "main": "index.js",
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
   "scripts": {
     "build": "tsc --project tsconfig.json && tsc-alias -p tsconfig.json",
     "start": "node dist/index.js",
-    "dev": "nodemon -r tsconfig-paths/register src/index.ts",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "nodemon --watch src --ext ts,tsx --exec tsx src/index.ts",
+    "db:init": "sqlite3 src/db/bfc.db < src/db/schema.sql"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "dependencies": {
     "@types/sqlite3": "^3.1.11",
     "alchemy-sdk": "^3.4.7",
@@ -21,7 +20,8 @@
     "ethers": "^6.13.4",
     "express": "^4.21.1",
     "kzg-wasm": "^0.5.0",
-    "padded-bloom-filter-cascade": "github:jfelixh/padded-bloom-filter-cascade#refactor-package",
+    "padded-bloom-filter-cascade": "github:jfelixh/padded-bloom-filter-cascade",
+    "sqlite": "^5.1.1",
     "sqlite3": "^5.1.7",
     "tsconfig-paths": "^4.2.0",
     "ws": "^8.18.0"
@@ -36,6 +36,7 @@
     "nodemon": "^3.1.7",
     "ts-node": "^10.9.2",
     "tsc-alias": "^1.8.10",
+    "tsx": "^4.19.2",
     "typescript": "^5.6.3"
   }
 }

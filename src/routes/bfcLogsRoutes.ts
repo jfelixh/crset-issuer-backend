@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { getLogs, getAddress } from "../controllers/bfcLogsController";
+import { getLogs, getAddress } from "@/controllers/bfcLogsController";
 
 const router = Router();
 
