@@ -110,7 +110,7 @@ export async function publishBFC(): Promise<{
     });
     emitter?.emit("progress", { step: "serializeBFC", status: "started" });
     const endTimeConstruction = performance.now();
-    const serializedData = toDataHexString([serializedBFC, salt]]);
+    const serializedData = toDataHexString([serializedBFC, salt]);
     emitter?.emit("progress", {
       step: "serializeBFC",
       status: "completed",
@@ -136,7 +136,7 @@ export async function publishBFC(): Promise<{
       insertBfcLog(db, {
         validIdsSize: validSet.size,
         invalidIdsSize: invalidSet.size,
-        serializedDataSize: serializedData.length,
+        serializedDataSize: Math.ceil(serializedData.length / 2), // in bytes
         constructionTimeInSec: Number(
           ((endTimeConstruction - startTimeConstruction) / 1000).toFixed(4)
         ),
@@ -149,13 +149,13 @@ export async function publishBFC(): Promise<{
         publicationTimeStemp: new Date().toISOString(),
         transactionCost: result.transactionCost,
         calldataTotalCost: result.callDataTotalCost,
-        numberOfBfcLayers: temp[0].length,
+        numberOfBfcLayers: serializedBFC.length as number,
         rHat: rHat,
       });
-      return { success: true, filter: temp[0] };
+      return { success: true, filter: serializedBFC };
     } else {
       console.log("Result from publishing is missing");
-      return { success: false, filter: temp[0] };
+      return { success: false, filter: serializedBFC };
     }
   } catch (error) {
     console.error("Error querying the database:", error);

@@ -196,9 +196,12 @@ export async function sendBlobTransaction(
     if (receipt) {
     console.log(`TX mined in block ${receipt.blockNumber}`);
 
-    
-    if (receipt) {
-      metrics.blockNumber = receipt!.blockNumber;
+    const blobData = blobs.flatMap(blob => {
+      return new TextEncoder().encode(blob.data); 
+    });
+    const callDataGasUsed = calculateCallDataGasUsed(blobData)
+
+    metrics.blockNumber = receipt!.blockNumber;
     metrics.gasPrice = Number(receipt!.gasPrice);
     metrics.gasUsed = Number(receipt!.gasUsed);
     metrics.blobGasPrice = Number(receipt!.blobGasPrice!);
@@ -213,17 +216,15 @@ export async function sendBlobTransaction(
     return {
       numberOfBlobs: blobs.length,
       txHash: tx.hash,
-      transactionCost: metrics.gasPrice * metrics.gasUsed,
-      blobVersionedHashes: blobs.map((blob) => blob.commitment),
-      callDataTotalCost: calculateCallDataGasUsed([
-        new TextEncoder().encode(data),
-      ]),
+      transactionCost: ((metrics.gasPrice * metrics.gasUsed) + (metrics.blobGasPrice * metrics.blobGasUsed) ) / 10**18, // in ether
+      blobVersionedHashes: tx.blobVersionedHashes || [],
+      callDataTotalCost: (metrics.gasPrice *  callDataGasUsed) / 10**18, // in ether
     };
-  } catch (error) {
-    console.error("Error sending blob transaction:", error);
-    throw error;
+  } else {
+    throw new Error("Receipt is null or undefined");
   }
 } catch (error) {
   console.error("Error sending blob transaction:", error);
   throw error; 
+}
 }
