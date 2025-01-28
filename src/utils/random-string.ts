@@ -1,4 +1,4 @@
-import crytpo from "crypto";
+import crypto from "crypto";
 
 interface RandomStringOptions {
   length: number;
@@ -16,5 +16,5 @@ interface RandomStringOptions {
 export function randomString(
   { length, type }: RandomStringOptions = { length: 64, type: "hex" }
 ): string {
-  return crytpo.randomBytes(length).toString(type);
+  return crypto.randomBytes(length).toString(type);
 }

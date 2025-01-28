@@ -1,0 +1,12 @@
+services:
+  bfc-issuer-backend:
+    build: .
+    ports:
+      - "5050:5050"
+    volumes:
+      - bfc-status-issuer-backend:/app
+    env_file:
+      - .env
+
+volumes:
+  bfc-status-issuer-backend:

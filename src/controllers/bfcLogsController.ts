@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
-import { getLogData } from "../services/bfcLogsService";
+import { getLogData } from "@/services/bfcLogsService";
 import sqlite from "sqlite3";
-import { connectToDb } from "src/db/database";
+import { connectToDb } from "@/db/database";
 
 
 export async function getLogs(req: Request, res: Response): Promise<void> {
