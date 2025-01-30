@@ -7,6 +7,7 @@ dotenv.config({ path: "../../.env" });
 
 export function connectToDb() {
   const databaseLocation = process.env.DB_LOCATION;
+  console.log("Connecting to SQLite database at path: ", databaseLocation);
   if (!databaseLocation) {
     throw new Error("No database location provided");
   }
