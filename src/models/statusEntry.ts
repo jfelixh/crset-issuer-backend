@@ -1,6 +1,6 @@
 export type DBEntry = {
   id: string;
-  status: 1 | 0;
+  status: string;
 };
 
 export interface StatusEntry {
