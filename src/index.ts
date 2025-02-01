@@ -49,6 +49,7 @@ app.use("/api/bfcLogs", bfcLogsRoutes);
 app.listen(port, async() => {
   console.log(`[server]: Server is running at http://localhost:${port}`);
   // console.log("Start populating statusTable")
-  await initDB()
+  // TODO: Uncomment this line when you would run docker compose-up
+ // await initDB()
  // console.log("End populating statusTable")
 });
