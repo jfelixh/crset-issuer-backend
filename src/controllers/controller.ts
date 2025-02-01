@@ -37,7 +37,10 @@ export async function getStatusById(db: Database, id: string): Promise<number> {
           reject(err);
           return;
         }
-
+        if (!row) {
+          console.log("No row found");
+          reject("Not found id in the database")
+        }
         resolve(row.status);
       }
     );

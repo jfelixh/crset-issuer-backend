@@ -146,7 +146,7 @@ export async function publishBFC(): Promise<{
         numberOfBlobs: result.numberOfBlobs,
         transactionHash: result.txHash,
         blobVersionedHash: result.blobVersionedHashes,
-        publicationTimeStemp: new Date().toISOString(),
+        publicationTimestamp: new Date().toISOString(),
         transactionCost: result.transactionCost,
         calldataTotalCost: result.callDataTotalCost,
         numberOfBfcLayers: serializedBFC.length as number,

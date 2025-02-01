@@ -14,7 +14,7 @@ import { Database } from "sqlite3";
  */
 export function insertBfcLog(db: Database, logData: BfcLogData) {
   return new Promise((resolve, reject) => {
-    const query = `INSERT INTO bfcLogs (validIdsSize, invalidIdsSize, serializedDataSize, constructionTimeInSec, publicationTimeInSec, numberOfBlobs, transactionHash, blobVersionedHash, publicationTimeStemp, transactionCost, calldataTotalCost, numberOfBfcLayers, rHat)
+    const query = `INSERT INTO bfcLogs (validIdsSize, invalidIdsSize, serializedDataSize, constructionTimeInSec, publicationTimeInSec, numberOfBlobs, transactionHash, blobVersionedHash, publicationTimestamp, transactionCost, calldataTotalCost, numberOfBfcLayers, rHat)
                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
     db.run(
@@ -28,7 +28,7 @@ export function insertBfcLog(db: Database, logData: BfcLogData) {
         logData.numberOfBlobs,
         logData.transactionHash,
         JSON.stringify(logData.blobVersionedHash), // Store as JSON string
-        logData.publicationTimeStemp,
+        logData.publicationTimestamp,
         logData.transactionCost,
         logData.calldataTotalCost,
         logData.numberOfBfcLayers,

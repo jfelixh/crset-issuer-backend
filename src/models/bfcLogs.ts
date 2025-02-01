@@ -7,7 +7,7 @@ export type BfcLogData = {
   numberOfBlobs: number;        
   transactionHash: string;       
   blobVersionedHash: string[];   
-  publicationTimeStemp: string;  
+  publicationTimestamp: string;  
   transactionCost: number;      
   calldataTotalCost: number;    
   numberOfBfcLayers: number;    
