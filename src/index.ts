@@ -7,6 +7,7 @@ import bfcLogsRoutes from "./routes/bfcLogsRoutes";
 import express, { Express } from "express";
 import { WebSocket, WebSocketServer } from "ws";
 import { initDB } from "./utils/populateDatabase";
+import { hostname } from "os";
 
 dotenv.config({ path: ".env" });
 
@@ -46,10 +47,10 @@ app.use(express.json());
 app.use("/api/status", statusRoutes);
 app.use("/api/bfcLogs", bfcLogsRoutes);
 
-app.listen(port, async() => {
+app.listen(port, async () => {
   console.log(`[server]: Server is running at http://localhost:${port}`);
   // console.log("Start populating statusTable")
   // TODO: Uncomment this line when you would run docker compose-up
- // await initDB()
- // console.log("End populating statusTable")
+  // await initDB()
+  // console.log("End populating statusTable")
 });

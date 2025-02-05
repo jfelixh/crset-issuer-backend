@@ -3,10 +3,14 @@ services:
     build: .
     ports:
       - "5050:5050"
+      - "8091:8091"
     volumes:
-      - bfc-status-issuer-backend:/app
+      - ./../bfc-status-demo/issuer-demo/data:/app/src/database
     env_file:
       - .env
+    networks:
+      - test-network
 
-volumes:
-  bfc-status-issuer-backend:
+networks:
+  test-network:
+    external: true
