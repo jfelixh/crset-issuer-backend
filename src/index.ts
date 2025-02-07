@@ -1,16 +1,43 @@
+import bfcLogsRoutes from "@/routes/bfcLogsRoutes";
+import statusRoutes from "@/routes/statusRoutes";
 import cors from "cors";
 import dotenv from "dotenv";
-import express, { Express, Request, Response } from "express";
-import statusRoutes from "./routes/statusRoutes";
+import { EventEmitter } from "events";
+import express, { Express, Request, Response, NextFunction } from "express";
+import { WebSocket, WebSocketServer } from "ws";
+import swaggerUi from "swagger-ui-express";
+import YAML from "yaml";
+import fs from "fs";
+import path from "path";
 
 dotenv.config({ path: ".env" });
 
 const app: Express = express();
 const port = process.env.PORT;
 
+export const emitter = new EventEmitter();
+const wss = new WebSocketServer({ port: 8091 });
+wss.on("connection", (ws: WebSocket) => {
+  // Client identifier passed through the WebSocket protocol
+  console.log("Client connected");
+
+  // Forward events from the EventEmitter to the correct WebSocket client
+  const handleEvent = (eventData: any) => {
+    ws.send(JSON.stringify(eventData));
+  };
+
+  // Attach listener to the EventEmitter
+  emitter.on("progress", handleEvent);
+
+  // Handle client disconnection
+  ws.on("close", () => {
+    console.log("Client disconnected");
+    emitter.removeListener("progress", handleEvent);
+  });
+});
+
 app.use(
   cors({
-    // origin: "http://localhost:3000",
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
   })
@@ -18,12 +45,20 @@ app.use(
 
 app.use(express.json());
 
-app.get("/api", (req: Request, res: Response) => {
-  res.send("Hello World!");
-});
-
 app.use("/api/status", statusRoutes);
+app.use("/api/bfcLogs", bfcLogsRoutes);
 
-app.listen(port, () => {
+// Read and parse OpenAPI spec
+const openApiPath = path.join(__dirname, "../docs/openapi.yaml");
+const openApiSpec = YAML.parse(fs.readFileSync(openApiPath, "utf8"));
+
+// Serve Swagger UI
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(openApiSpec));
+
+app.listen(port, async () => {
   console.log(`[server]: Server is running at http://localhost:${port}`);
+  // console.log("Start populating statusTable")
+  // TODO: Uncomment this line when you would run docker compose-up
+  // await initDB()
+  // console.log("End populating statusTable")
 });
