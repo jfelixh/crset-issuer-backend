@@ -1,7 +1,6 @@
 import dotenv from "dotenv";
 import { ethers, isAddress } from "ethers";
 import { loadKZG } from "kzg-wasm";
-import {BigNumber} from "alchemy-sdk";
 import { emitter } from "src";
 import { calculateCallDataGasUsed } from "./hexToByte";
 dotenv.config({ path: "../../.env" });
@@ -11,11 +10,6 @@ type Blob = {
   commitment: string;
   proof: string;
 };
-
-// Define the BLS12-381 field modulus (p)
-const FIELD_MODULUS = BigInt(
-  "52435875175126190479447740508185965837690552500527637822603658699938581184512"
-);
 
 /**
  * Ensures all 32-byte scalars in a Uint8Array are canonical by adding padding
@@ -36,16 +30,16 @@ function ensureCanonicalBlobs(rawData: Uint8Array): Uint8Array {
       const paddedSegment = new Uint8Array(scalarSize);
       paddedSegment.set(segment);
       segment = paddedSegment;
-    } 
+    }
 
     // Handle non-canonical scalar by adding 1-byte padding
     const paddedSegment = new Uint8Array(scalarSize + 1); // Add 1-byte padding
     paddedSegment.set(segment, 1); // Shift data by 1 byte
     canonicalData.push(paddedSegment); // Truncate to 32 bytes
-    p=1;
+    p = 1;
   }
   // Flatten the array of segments back into a single Uint8Array
-  return new Uint8Array(canonicalData.flatMap(val => Array.from(val)));
+  return new Uint8Array(canonicalData.flatMap((val) => Array.from(val)));
 }
 
 /**
@@ -64,7 +58,9 @@ export async function blobFromData(
   }
 
   // Convert hex string to Uint8Array
-  const rawData = new Uint8Array(data.match(/.{1,2}/g)!.map((byte) => parseInt(byte, 16)));
+  const rawData = new Uint8Array(
+    data.match(/.{1,2}/g)!.map((byte) => parseInt(byte, 16))
+  );
 
   // Ensure all blobs are canonical
   const canonicalData = ensureCanonicalBlobs(rawData);
@@ -194,37 +190,40 @@ export async function sendBlobTransaction(
     };
     const receipt = await tx.wait();
     if (receipt) {
-    console.log(`TX mined in block ${receipt.blockNumber}`);
+      console.log(`TX mined in block ${receipt.blockNumber}`);
 
-    const blobData = blobs.flatMap(blob => {
-      return new TextEncoder().encode(blob.data); 
-    });
-    const callDataGasUsed = calculateCallDataGasUsed(blobData)
+      const blobData = blobs.flatMap((blob) => {
+        return new TextEncoder().encode(blob.data);
+      });
+      const callDataGasUsed = calculateCallDataGasUsed(blobData);
 
-    metrics.blockNumber = receipt!.blockNumber;
-    metrics.gasPrice = Number(receipt!.gasPrice);
-    metrics.gasUsed = Number(receipt!.gasUsed);
-    metrics.blobGasPrice = Number(receipt!.blobGasPrice!);
-    metrics.blobGasUsed = Number(receipt!.blobGasUsed!);
+      metrics.blockNumber = receipt!.blockNumber;
+      metrics.gasPrice = Number(receipt!.gasPrice);
+      metrics.gasUsed = Number(receipt!.gasUsed);
+      metrics.blobGasPrice = Number(receipt!.blobGasPrice!);
+      metrics.blobGasUsed = Number(receipt!.blobGasUsed!);
 
-    emitter?.emit("progress", {
-      step: "sendTx",
-      status: "completed",
-      additionalMetrics: metrics,
-    });
+      emitter?.emit("progress", {
+        step: "sendTx",
+        status: "completed",
+        additionalMetrics: metrics,
+      });
 
-    return {
-      numberOfBlobs: blobs.length,
-      txHash: tx.hash,
-      transactionCost: ((metrics.gasPrice * metrics.gasUsed) + (metrics.blobGasPrice * metrics.blobGasUsed) ) / 10**18, // in ether
-      blobVersionedHashes: tx.blobVersionedHashes || [],
-      callDataTotalCost: (metrics.gasPrice *  callDataGasUsed) / 10**18, // in ether
-    };
-  } else {
-    throw new Error("Receipt is null or undefined");
+      return {
+        numberOfBlobs: blobs.length,
+        txHash: tx.hash,
+        transactionCost:
+          (metrics.gasPrice * metrics.gasUsed +
+            metrics.blobGasPrice * metrics.blobGasUsed) /
+          10 ** 18, // in ether
+        blobVersionedHashes: tx.blobVersionedHashes || [],
+        callDataTotalCost: (metrics.gasPrice * callDataGasUsed) / 10 ** 18, // in ether
+      };
+    } else {
+      throw new Error("Receipt is null or undefined");
+    }
+  } catch (error) {
+    console.error("Error sending blob transaction:", error);
+    throw error;
   }
-} catch (error) {
-  console.error("Error sending blob transaction:", error);
-  throw error; 
-}
 }
