@@ -1,5 +1,5 @@
 import {
-  createStatusEntry, 
+  createStatusEntry,
   getStatusByIDForUsers,
   publishBFC,
   revokeCredential,
@@ -34,7 +34,6 @@ router.post("/revokeCredential", async (req: Request, res: Response) => {
 
 // constructs and publishes a new blob transaction with the filter
 router.post("/publishBFC", async (req: Request, res: Response) => {
-  // const filter = req.body;
   const result = await publishBFC();
   res.status(200).json(result);
 });

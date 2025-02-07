@@ -1,0 +1,150 @@
+openapi: 3.1.0
+info:
+  title: BFC Status Issuer Backend
+  version: 1.0.0
+  description: Service for managing credential status entries and BFC publication
+
+tags:
+  - name: Status
+    description: Credential status (and BFC) management endpoints
+
+paths:
+  api/status/createStatusEntry:
+    post:
+      tags:
+        - Status
+      summary: Create new revocation ID
+      responses:
+        "201":
+          description: Status entry created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusEntry"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  api/status/revokeCredential:
+    post:
+      tags:
+        - Status
+      summary: Revoke credential
+      parameters:
+        - name: id
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Credential revoked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessMessage"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: ID not found or already revoked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  api/status/getStatus:
+    post:
+      tags:
+        - Status
+      summary: Get credential status
+      parameters:
+        - name: id
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Status retrieved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusResponse"
+
+  api/status/publishBFC:
+    post:
+      tags:
+        - Status
+      summary: Publish BFC
+      responses:
+        "200":
+          description: BFC published
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BFCResponse"
+
+components:
+  schemas:
+    StatusEntry:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum: [BFCStatusEntry]
+        statusPurpose:
+          type: string
+          enum: [revocation]
+      required:
+        - id
+        - type
+        - statusPurpose
+
+    StatusResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        status:
+          type: boolean
+      required:
+        - success
+        - status
+
+    SuccessMessage:
+      type: object
+      properties:
+        message:
+          type: string
+      required:
+        - message
+
+    BFCResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        filter:
+          type: array
+          items:
+            type: object
+      required:
+        - success
+        - filter
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error

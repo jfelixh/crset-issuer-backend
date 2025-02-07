@@ -3,11 +3,12 @@ import statusRoutes from "@/routes/statusRoutes";
 import cors from "cors";
 import dotenv from "dotenv";
 import { EventEmitter } from "events";
-import bfcLogsRoutes from "./routes/bfcLogsRoutes";
-import express, { Express } from "express";
+import express, { Express, Request, Response, NextFunction } from "express";
 import { WebSocket, WebSocketServer } from "ws";
-import { initDB } from "./utils/populateDatabase";
-import { hostname } from "os";
+import swaggerUi from "swagger-ui-express";
+import YAML from "yaml";
+import fs from "fs";
+import path from "path";
 
 dotenv.config({ path: ".env" });
 
@@ -46,6 +47,13 @@ app.use(express.json());
 
 app.use("/api/status", statusRoutes);
 app.use("/api/bfcLogs", bfcLogsRoutes);
+
+// Read and parse OpenAPI spec
+const openApiPath = path.join(__dirname, "../docs/openapi.yaml");
+const openApiSpec = YAML.parse(fs.readFileSync(openApiPath, "utf8"));
+
+// Serve Swagger UI
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(openApiSpec));
 
 app.listen(port, async () => {
   console.log(`[server]: Server is running at http://localhost:${port}`);

@@ -13,14 +13,6 @@ import * as process from "node:process";
 import { constructBFC, toDataHexString } from "padded-bloom-filter-cascade";
 import { emitter } from "../index";
 import { insertBfcLog } from "./bfcLogsService";
-import {EventEmitter} from "events";
-import { time } from "console";
-
-interface StatusEntry {
-  id: string; // CAIP-10 Account ID
-  type: "BFCStatusEntry";
-  statusPurpose: "revocation";
-}
 
 // Creates a new revocation status entry to be added to a VC before it is signed by the issuer.
 export async function createStatusEntry(): Promise<StatusEntry | null> {
@@ -98,7 +90,6 @@ export async function publishBFC(): Promise<{
     // Calculate optimal rHat: rHat >= validSet.size AND rHat >= invalidSet.size / 2 (see pseudo code)
     const rHat =
       validSet.size > invalidSet.size / 2 ? validSet.size : invalidSet.size / 2;
-
 
     emitter?.emit("progress", { step: "constructBFC", status: "started" });
     const startTimeConstruction = performance.now();
