@@ -12,7 +12,7 @@
  * const gasUsed = calculateCallDataGasUsed(blobData); // Returns 40 (2 zero bytes * 4 + 2 non-zero bytes * 16)
  */
 export const calculateCallDataGasUsed = (
-  blobDataArray: Uint8Array[]
+  blobDataArray: Uint8Array[],
 ): number => {
   let nonZeroBytes = 0;
   let zeroBytes = 0;

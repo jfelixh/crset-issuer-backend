@@ -10,7 +10,7 @@ import { sendBlobTransaction } from "@/utils/blob";
 import { randomString } from "@/utils/random-string";
 import { AccountId } from "caip";
 import * as process from "node:process";
-import { constructBFC, toDataHexString } from "padded-bloom-filter-cascade";
+import { constructBFC, toDataHexString } from "crset-cascade";
 import { emitter } from "../index";
 import { insertBfcLog } from "./bfcLogsService";
 
@@ -115,7 +115,7 @@ export async function publishBFC(): Promise<{
       process.env.INFURA_API_KEY!,
       process.env.PRIVATE_KEY!,
       process.env.ADDRESS!,
-      serializedData
+      serializedData,
     ).catch((error: Error) => {
       console.error("Error publishing BFC:", error);
       return undefined;
@@ -129,10 +129,10 @@ export async function publishBFC(): Promise<{
         invalidIdsSize: invalidSet.size,
         serializedDataSize: Math.ceil(serializedData.length / 2), // in bytes
         constructionTimeInSec: Number(
-          ((endTimeConstruction - startTimeConstruction) / 1000).toFixed(4)
+          ((endTimeConstruction - startTimeConstruction) / 1000).toFixed(4),
         ),
         publicationTimeInSec: Number(
-          ((endTimePublishing - startTimePublishing) / 1000).toFixed(4)
+          ((endTimePublishing - startTimePublishing) / 1000).toFixed(4),
         ),
         numberOfBlobs: result.numberOfBlobs,
         transactionHash: result.txHash,

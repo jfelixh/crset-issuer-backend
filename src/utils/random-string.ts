@@ -14,7 +14,7 @@ interface RandomStringOptions {
  * @returns {string} A random string of the specified length and type.
  */
 export function randomString(
-  { length, type }: RandomStringOptions = { length: 64, type: "hex" }
+  { length, type }: RandomStringOptions = { length: 64, type: "hex" },
 ): string {
   return crypto.randomBytes(length).toString(type);
 }

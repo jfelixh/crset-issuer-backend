@@ -51,7 +51,7 @@ function ensureCanonicalBlobs(rawData: Uint8Array): Uint8Array {
  */
 export async function blobFromData(
   data: string,
-  blobSize = 128
+  blobSize = 128,
 ): Promise<Blob[]> {
   if (data.startsWith("0x")) {
     data = data.slice(2);
@@ -59,7 +59,7 @@ export async function blobFromData(
 
   // Convert hex string to Uint8Array
   const rawData = new Uint8Array(
-    data.match(/.{1,2}/g)!.map((byte) => parseInt(byte, 16))
+    data.match(/.{1,2}/g)!.map((byte) => parseInt(byte, 16)),
   );
 
   // Ensure all blobs are canonical
@@ -112,7 +112,7 @@ export async function sendBlobTransaction(
   APIKey: string,
   privateKey: string,
   receiverAddress: string,
-  data: string
+  data: string,
 ): Promise<{
   numberOfBlobs: number;
   txHash: string;
@@ -148,10 +148,10 @@ export async function sendBlobTransaction(
     if (blobs.length > 6) {
       // Maximum number of blobs per transaction is 6 (as of November 2024)
       console.error(
-        "Error sending blob transaction: too many blobs (>6), currently not supported"
+        "Error sending blob transaction: too many blobs (>6), currently not supported",
       );
       throw new Error(
-        "Error sending blob transaction: too many blobs (>6), currently not supported"
+        "Error sending blob transaction: too many blobs (>6), currently not supported",
       );
     }
 

@@ -37,27 +37,27 @@ function createTable(db: Database) {
         return;
       }
       console.log("Credential Status table is ready.");
-    }
+    },
   );
 }
 
 function populateDb(db: Database, filePath: string) {
   const insertStmt = db.prepare(
-    "INSERT INTO credentialStatus (id, status) VALUES (?, ?)"
+    "INSERT INTO credentialStatus (id, status) VALUES (?, ?)",
   );
 
   fs.createReadStream(filePath)
     .pipe(
       csv({
         // separator: ";"
-      })
+      }),
     )
     .on("data", (row) => {
       insertStmt.run([row.id, row.status], (err) => {
         if (err) {
           console.error(
             `Error inserting row ${JSON.stringify(row)}:`,
-            err.message
+            err.message,
           );
         }
       });

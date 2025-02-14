@@ -28,12 +28,12 @@ export function connectToDb(databaseLocation: string): Promise<Database> {
 
 async function populateDbFromCsv(
   db: Database,
-  filePath: string
+  filePath: string,
 ): Promise<void> {
   console.log(`Populating database with data from CSV file at: ${filePath}`);
 
   const insertStmt = db.prepare(
-    "INSERT OR REPLACE INTO credentialStatus (id, status) VALUES (?, ?)"
+    "INSERT OR REPLACE INTO credentialStatus (id, status) VALUES (?, ?)",
   );
   const stream = fs
     .createReadStream(filePath, { encoding: "utf8" }) // Ensure correct encoding
@@ -41,7 +41,7 @@ async function populateDbFromCsv(
       csv({
         headers: ["id", "status"],
         skipLines: 1,
-      })
+      }),
     );
 
   stream.on("data", (row) => {
@@ -53,7 +53,7 @@ async function populateDbFromCsv(
       if (err) {
         console.error(
           `Error inserting row ${JSON.stringify(row)}:`,
-          err.message
+          err.message,
         );
       }
     });
@@ -95,7 +95,7 @@ async function checkTable(db: Database): Promise<void> {
                   console.log(
                     `✅ Found entry for ID ${(row as DBEntry).id}: ${
                       (row as DBEntry).status
-                    }`
+                    }`,
                   );
                 });
               }
@@ -104,7 +104,7 @@ async function checkTable(db: Database): Promise<void> {
             }
           });
         }
-      }
+      },
     );
   });
 }

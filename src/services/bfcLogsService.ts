@@ -1,9 +1,6 @@
 import { BfcLogData } from "@/models/bfcLogs";
 import { Database } from "sqlite3";
 
-const sqlite3 = require("sqlite3").verbose();
-const db = new sqlite3.Database("database.db");
-
 /**
  * Inserts a new BFC log entry into the database
  * @param {Object} logData The data to be inserted
@@ -38,7 +35,7 @@ export function insertBfcLog(db: Database, logData: BfcLogData) {
           return;
         }
         resolve(this.lastID); // Resolve with the last inserted rowID
-      }
+      },
     );
   });
 }
