@@ -123,8 +123,6 @@ export async function sendBlobTransaction(
   if (!APIKey || !privateKey || !receiverAddress || !data) {
     throw new Error("Missing required parameters");
   }
-  // TODO: adapt for >6 blobs => multiple transactions
-  // TODO: allow user to choose provider
   const provider = new ethers.InfuraProvider("sepolia", APIKey);
   const wallet = new ethers.Wallet(privateKey, provider);
 
@@ -159,10 +157,10 @@ export async function sendBlobTransaction(
     const transaction = {
       type: 3, // blob transaction type
       to: receiverAddress, // send to one's self
-      maxFeePerGas: ethers.parseUnits("80", "gwei"),
+      maxFeePerGas: ethers.parseUnits("10", "gwei"),
       maxPriorityFeePerGas: ethers.parseUnits("10", "gwei"),
       gasLimit: 500000,
-      maxFeePerBlobGas: ethers.parseUnits("100", "gwei"),
+      maxFeePerBlobGas: ethers.parseUnits("50", "wei"),
       blobs: blobs,
     };
     emitter?.emit("progress", { step: "constructTx", status: "completed" });
