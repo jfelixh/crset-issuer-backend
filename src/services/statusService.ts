@@ -87,9 +87,7 @@ export async function publishBFC(): Promise<{
       },
     });
 
-    // Calculate optimal rHat: rHat >= validSet.size AND rHat >= invalidSet.size / 2 (see pseudo code)
-    const rHat =
-      validSet.size > invalidSet.size / 2 ? validSet.size : invalidSet.size / 2;
+    const rHat = parseInt(process.env.VALID_CAPACITY || "4096", 10);
 
     emitter?.emit("progress", { step: "constructBFC", status: "started" });
     const startTimeConstruction = performance.now();
