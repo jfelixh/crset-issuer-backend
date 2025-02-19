@@ -23,13 +23,14 @@ export async function createStatusEntry(): Promise<StatusEntry | null> {
       chainId: "eip155:1",
       address: process.env.ADDRESS!,
     }).toString();
-    const id = statusPublisher + ":" + randomString();
-    const insertedID = await insertStatusEntry(db, id, 1);
+    const revocationID = randomString();
+    const id = statusPublisher + ":" + revocationID;
+    const insertedID = await insertStatusEntry(db, revocationID, 1);
 
     if (insertedID) {
       return {
-        id,
-        type: "BFCStatusEntry",
+        id: revocationID,
+        type: "CRSetEntry",
         statusPurpose: "revocation",
       };
     }
@@ -68,7 +69,6 @@ export async function getStatusByIDForUsers(id: string): Promise<boolean> {
   return false;
 }
 
-// Publish BFC
 export async function publishBFC(): Promise<{
   success: boolean;
   filter: any[];

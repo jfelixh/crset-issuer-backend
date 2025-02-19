@@ -46,7 +46,7 @@ function ensureCanonicalBlobs(rawData: Uint8Array): Uint8Array {
  * Constructs valid blobs with the original hex string (each blob with corresponding KZG commitment and proof).
  * The output blobs are canonical and preserve the original data.
  * @param data - The data to be written to the blockchain, in hex string format
- * @param blobSize - The size of each blob in kilobytes (128KB by default)
+ * @param blobSize - The size of each blob in kilobytes (128KiB by default)
  * @returns A promise of an array of blobs with the data, KZG commitment, and proof
  */
 export async function blobFromData(

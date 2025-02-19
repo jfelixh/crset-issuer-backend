@@ -5,6 +5,6 @@ export type DBEntry = {
 
 export interface StatusEntry {
   id: string; // CAIP-10 Account ID
-  type: "BFCStatusEntry";
+  type: "CRSetEntry";
   statusPurpose: "revocation";
 }
