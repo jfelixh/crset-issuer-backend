@@ -29,7 +29,7 @@ export async function createStatusEntry(): Promise<StatusEntry | null> {
 
     if (insertedID) {
       return {
-        id: revocationID,
+        id,
         type: "CRSetEntry",
         statusPurpose: "revocation",
       };
@@ -71,7 +71,7 @@ export async function getStatusByIDForUsers(id: string): Promise<boolean> {
 
 export async function publishBFC(): Promise<{
   success: boolean;
-  filter: any[];
+  filter: { bits: Int32Array; n: number; k: number }[];
 }> {
   try {
     emitter?.emit("progress", { step: "queryDB", status: "started" });
@@ -91,15 +91,15 @@ export async function publishBFC(): Promise<{
 
     emitter?.emit("progress", { step: "constructBFC", status: "started" });
     const startTimeConstruction = performance.now();
-    const [serializedBFC, salt] = constructBFC(validSet, invalidSet, rHat);
+    const [cascade, salt] = constructBFC(validSet, invalidSet, rHat);
     emitter?.emit("progress", {
       step: "constructBFC",
       status: "completed",
-      additionalMetrics: { levelCount: serializedBFC.length },
+      additionalMetrics: { levelCount: cascade.length },
     });
     emitter?.emit("progress", { step: "serializeBFC", status: "started" });
     const endTimeConstruction = performance.now();
-    const serializedData = toDataHexString([serializedBFC, salt]);
+    const serializedData = toDataHexString([cascade, salt]);
     emitter?.emit("progress", {
       step: "serializeBFC",
       status: "completed",
@@ -138,13 +138,13 @@ export async function publishBFC(): Promise<{
         publicationTimestamp: new Date().toISOString(),
         transactionCost: result.transactionCost,
         calldataTotalCost: result.callDataTotalCost,
-        numberOfBfcLayers: serializedBFC.length as number,
+        numberOfBfcLayers: cascade.length as number,
         rHat: rHat,
       });
-      return { success: true, filter: serializedBFC };
+      return { success: true, filter: cascade };
     } else {
       console.log("Result from publishing is missing");
-      return { success: false, filter: serializedBFC };
+      return { success: false, filter: cascade };
     }
   } catch (error) {
     console.error("Error querying the database:", error);

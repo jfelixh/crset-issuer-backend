@@ -13,7 +13,9 @@
     "build": "tsc --project tsconfig.json && tsc-alias -p tsconfig.json",
     "start": "node dist/index.js",
     "dev": "nodemon --watch src --ext ts,tsx --exec tsx src/index.ts",
-    "db:init": "sqlite3 src/db/bfc.db < src/db/schema.sql"
+    "db:init": "sqlite3 src/db/bfc.db < src/db/schema.sql",
+    "lint": "eslint",
+    "lint:fix": "eslint --fix"
   },
   "dependencies": {
     "@types/sqlite3": "^3.1.11",
@@ -34,18 +36,22 @@
     "yaml": "^2.7.0"
   },
   "devDependencies": {
+    "@eslint/js": "^9.20.0",
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",
     "@types/node": "^22.9.1",
     "@types/ws": "^8.5.13",
     "concurrently": "^9.1.0",
+    "crset-check": "github:jfelixh/crset-check",
     "dotenv": "^16.4.5",
+    "eslint": "^9.20.1",
+    "globals": "^16.0.0",
     "nodemon": "^3.1.7",
     "prettier": "^3.5.1",
     "ts-node": "^10.9.2",
     "tsc-alias": "^1.8.10",
     "tsx": "^4.19.2",
     "typescript": "^5.6.3",
-    "crset-check": "github:jfelixh/crset-check#housekeeping"
+    "typescript-eslint": "^8.24.1"
   }
 }

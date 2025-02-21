@@ -20,7 +20,6 @@ type Blob = {
 function ensureCanonicalBlobs(rawData: Uint8Array): Uint8Array {
   const scalarSize = 31; // Each scalar is 32 bytes, leave one byte for padding, 3.125% overhead
   const canonicalData: Uint8Array[] = [];
-  let p = 0;
 
   for (let i = 0; i < rawData.length; i += scalarSize) {
     let segment = rawData.slice(i, i + scalarSize);
@@ -36,7 +35,6 @@ function ensureCanonicalBlobs(rawData: Uint8Array): Uint8Array {
     const paddedSegment = new Uint8Array(scalarSize + 1); // Add 1-byte padding
     paddedSegment.set(segment, 1); // Shift data by 1 byte
     canonicalData.push(paddedSegment); // Truncate to 32 bytes
-    p = 1;
   }
   // Flatten the array of segments back into a single Uint8Array
   return new Uint8Array(canonicalData.flatMap((val) => Array.from(val)));
@@ -67,7 +65,6 @@ export async function blobFromData(
 
   // Partition canonical data into blobs of specified size
   const chunkSize = blobSize * 1024; // Blob size in bytes (e.g., 128 KB)
-  const scalarSize = 32; // Each scalar is 32 bytes
   const blobArrays = [];
   for (let i = 0; i < canonicalData.length; i += chunkSize) {
     const chunk = canonicalData.slice(i, i + chunkSize);
@@ -176,7 +173,7 @@ export async function sendBlobTransaction(
     const tx = await wallet.sendTransaction(transaction);
     console.log(`Sending TX ${tx.hash}, waiting for confirmation...`);
 
-    let metrics = {
+    const metrics = {
       txHash: tx.hash,
       blockNumber: 0,
       from: tx.from,

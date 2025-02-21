@@ -28,7 +28,7 @@ export function insertBfcLog(db: Database, logData: BfcLogData) {
         logData.numberOfBfcLayers,
         logData.rHat,
       ],
-      function (err) {
+      function (err: Error) {
         if (err) {
           console.error("Error inserting BFC log entry:", err.message);
           reject(err);
@@ -51,6 +51,7 @@ export function getLogData(db: Database): Promise<BfcLogData[]> {
         return;
       }
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const logsWithParsedHashes = rows.map((row: any) => {
         return {
           ...row,

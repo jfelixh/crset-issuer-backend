@@ -3,7 +3,7 @@ import statusRoutes from "@/routes/statusRoutes";
 import cors from "cors";
 import dotenv from "dotenv";
 import { EventEmitter } from "events";
-import express, { Express, Request, Response, NextFunction } from "express";
+import express, { Express } from "express";
 import { WebSocket, WebSocketServer } from "ws";
 import swaggerUi from "swagger-ui-express";
 import YAML from "yaml";
@@ -22,7 +22,7 @@ wss.on("connection", (ws: WebSocket) => {
   console.log("Client connected");
 
   // Forward events from the EventEmitter to the correct WebSocket client
-  const handleEvent = (eventData: any) => {
+  const handleEvent = (eventData: unknown) => {
     ws.send(JSON.stringify(eventData));
   };
 
