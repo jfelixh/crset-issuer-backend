@@ -7,10 +7,9 @@ import {
 import { connectToDb } from "@/db/database";
 import { StatusEntry } from "@/models/statusEntry";
 import { sendBlobTransaction } from "@/utils/blob";
-import { randomString } from "@/utils/random-string";
 import { AccountId } from "caip";
 import * as process from "node:process";
-import { CRSetCascade } from "crset-cascade";
+import { CRSetCascade, random256BitHexString } from "crset-cascade";
 import { emitter } from "../index";
 import { insertBfcLog } from "./bfcLogsService";
 
@@ -23,7 +22,7 @@ export async function createStatusEntry(): Promise<StatusEntry | null> {
       chainId: "eip155:1",
       address: process.env.ADDRESS!,
     }).toString();
-    const revocationID = randomString();
+    const revocationID = random256BitHexString();
     const id = statusPublisher + ":" + revocationID;
     const insertedID = await insertStatusEntry(db, revocationID, 1);
 
