@@ -4,13 +4,11 @@ dotenv.config({ path: "../../.env" });
 
 export function connectToDb(): sqlite3.Database {
   const databaseLocation = process.env.DB_LOCATION || "./src/db/bfc.db";
-  console.log("Connecting to SQLite database at path:", databaseLocation);
 
   return new sqlite3.Database(databaseLocation, (err) => {
     if (err) {
       console.error("Error connecting to database:", err.message);
       throw err;
     }
-    console.log("Connected to SQLite database");
   });
 }

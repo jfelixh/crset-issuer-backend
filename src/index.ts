@@ -19,7 +19,7 @@ export const emitter = new EventEmitter();
 const wss = new WebSocketServer({ port: 8091 });
 wss.on("connection", (ws: WebSocket) => {
   // Client identifier passed through the WebSocket protocol
-  console.log("Client connected");
+  console.log("Client connected for live progress updates");
 
   // Forward events from the EventEmitter to the correct WebSocket client
   const handleEvent = (eventData: unknown) => {
@@ -31,7 +31,7 @@ wss.on("connection", (ws: WebSocket) => {
 
   // Handle client disconnection
   ws.on("close", () => {
-    console.log("Client disconnected");
+    console.log("Client disconnected for live progress updates");
     emitter.removeListener("progress", handleEvent);
   });
 });
@@ -57,8 +57,4 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(openApiSpec));
 
 app.listen(port, async () => {
   console.log(`[server]: Server is running at http://localhost:${port}`);
-  // console.log("Start populating statusTable")
-  // TODO: Uncomment this line when you would run docker compose-up
-  // await initDB()
-  // console.log("End populating statusTable")
 });

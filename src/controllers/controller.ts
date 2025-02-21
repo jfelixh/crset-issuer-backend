@@ -17,8 +17,6 @@ export async function getIdsByStatus(
           reject(err);
           return;
         }
-
-        // Populate the Set with emails
         rows.forEach((row) => ids.add(row.id));
         resolve(ids);
       },
@@ -38,8 +36,7 @@ export async function getStatusById(db: Database, id: string): Promise<number> {
           return;
         }
         if (!row) {
-          console.log("No row found");
-          reject("Not found id in the database");
+          reject("Id not found: " + id);
         }
         resolve(row.status);
       },

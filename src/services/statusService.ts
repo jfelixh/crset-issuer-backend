@@ -17,7 +17,6 @@ import { insertBfcLog } from "./bfcLogsService";
 export async function createStatusEntry(): Promise<StatusEntry | null> {
   try {
     const db = connectToDb();
-    // Generates a unique ID for a new status entry
     const statusPublisher = new AccountId({
       chainId: "eip155:1",
       address: process.env.ADDRESS!,
