@@ -1,8 +1,6 @@
 import { BfcLogData } from "@/models/bfcLogs";
 import { Database } from "sqlite3";
-
-const sqlite3 = require("sqlite3").verbose();
-const db = new sqlite3.Database("database.db");
+import sqlite3 from "sqlite3";
 
 /**
  * Inserts a new BFC log entry into the database
@@ -10,7 +8,7 @@ const db = new sqlite3.Database("database.db");
  * @returns {Promise<string>} The last inserted ID or an error
  */
 export function insertBfcLog(db: Database, logData: BfcLogData) {
-  return new Promise((resolve, reject) => {
+  return new Promise<number>((resolve, reject) => {
     const query = `INSERT INTO bfcLogs (validIdsSize, invalidIdsSize, serializedDataSize, constructionTimeInSec, publicationTimeInSec, numberOfBlobs, transactionHash, blobVersionedHash, publicationTimestamp, transactionCost, calldataTotalCost, numberOfBfcLayers, rHat)
                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
@@ -31,14 +29,14 @@ export function insertBfcLog(db: Database, logData: BfcLogData) {
         logData.numberOfBfcLayers,
         logData.rHat,
       ],
-      function (err) {
+      function (this: sqlite3.RunResult, err: Error) {
         if (err) {
           console.error("Error inserting BFC log entry:", err.message);
           reject(err);
           return;
         }
         resolve(this.lastID); // Resolve with the last inserted rowID
-      }
+      },
     );
   });
 }
@@ -54,6 +52,7 @@ export function getLogData(db: Database): Promise<BfcLogData[]> {
         return;
       }
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const logsWithParsedHashes = rows.map((row: any) => {
         return {
           ...row,

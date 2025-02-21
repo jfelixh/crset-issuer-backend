@@ -3,7 +3,7 @@ import statusRoutes from "@/routes/statusRoutes";
 import cors from "cors";
 import dotenv from "dotenv";
 import { EventEmitter } from "events";
-import express, { Express, Request, Response, NextFunction } from "express";
+import express, { Express } from "express";
 import { WebSocket, WebSocketServer } from "ws";
 import swaggerUi from "swagger-ui-express";
 import YAML from "yaml";
@@ -19,10 +19,10 @@ export const emitter = new EventEmitter();
 const wss = new WebSocketServer({ port: 8091 });
 wss.on("connection", (ws: WebSocket) => {
   // Client identifier passed through the WebSocket protocol
-  console.log("Client connected");
+  console.log("Client connected for live progress updates");
 
   // Forward events from the EventEmitter to the correct WebSocket client
-  const handleEvent = (eventData: any) => {
+  const handleEvent = (eventData: unknown) => {
     ws.send(JSON.stringify(eventData));
   };
 
@@ -31,7 +31,7 @@ wss.on("connection", (ws: WebSocket) => {
 
   // Handle client disconnection
   ws.on("close", () => {
-    console.log("Client disconnected");
+    console.log("Client disconnected for live progress updates");
     emitter.removeListener("progress", handleEvent);
   });
 });
@@ -40,7 +40,7 @@ app.use(
   cors({
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
-  })
+  }),
 );
 
 app.use(express.json());
@@ -57,8 +57,4 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(openApiSpec));
 
 app.listen(port, async () => {
   console.log(`[server]: Server is running at http://localhost:${port}`);
-  // console.log("Start populating statusTable")
-  // TODO: Uncomment this line when you would run docker compose-up
-  // await initDB()
-  // console.log("End populating statusTable")
 });

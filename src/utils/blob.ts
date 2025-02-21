@@ -1,7 +1,7 @@
 import dotenv from "dotenv";
 import { ethers, isAddress } from "ethers";
 import { loadKZG } from "kzg-wasm";
-import { emitter } from "src";
+import { emitter } from "../index";
 import { calculateCallDataGasUsed } from "./hexToByte";
 dotenv.config({ path: "../../.env" });
 
@@ -20,7 +20,6 @@ type Blob = {
 function ensureCanonicalBlobs(rawData: Uint8Array): Uint8Array {
   const scalarSize = 31; // Each scalar is 32 bytes, leave one byte for padding, 3.125% overhead
   const canonicalData: Uint8Array[] = [];
-  let p = 0;
 
   for (let i = 0; i < rawData.length; i += scalarSize) {
     let segment = rawData.slice(i, i + scalarSize);
@@ -36,7 +35,6 @@ function ensureCanonicalBlobs(rawData: Uint8Array): Uint8Array {
     const paddedSegment = new Uint8Array(scalarSize + 1); // Add 1-byte padding
     paddedSegment.set(segment, 1); // Shift data by 1 byte
     canonicalData.push(paddedSegment); // Truncate to 32 bytes
-    p = 1;
   }
   // Flatten the array of segments back into a single Uint8Array
   return new Uint8Array(canonicalData.flatMap((val) => Array.from(val)));
@@ -46,12 +44,12 @@ function ensureCanonicalBlobs(rawData: Uint8Array): Uint8Array {
  * Constructs valid blobs with the original hex string (each blob with corresponding KZG commitment and proof).
  * The output blobs are canonical and preserve the original data.
  * @param data - The data to be written to the blockchain, in hex string format
- * @param blobSize - The size of each blob in kilobytes (128KB by default)
+ * @param blobSize - The size of each blob in kilobytes (128KiB by default)
  * @returns A promise of an array of blobs with the data, KZG commitment, and proof
  */
 export async function blobFromData(
   data: string,
-  blobSize = 128
+  blobSize = 128,
 ): Promise<Blob[]> {
   if (data.startsWith("0x")) {
     data = data.slice(2);
@@ -59,7 +57,7 @@ export async function blobFromData(
 
   // Convert hex string to Uint8Array
   const rawData = new Uint8Array(
-    data.match(/.{1,2}/g)!.map((byte) => parseInt(byte, 16))
+    data.match(/.{1,2}/g)!.map((byte) => parseInt(byte, 16)),
   );
 
   // Ensure all blobs are canonical
@@ -67,7 +65,6 @@ export async function blobFromData(
 
   // Partition canonical data into blobs of specified size
   const chunkSize = blobSize * 1024; // Blob size in bytes (e.g., 128 KB)
-  const scalarSize = 32; // Each scalar is 32 bytes
   const blobArrays = [];
   for (let i = 0; i < canonicalData.length; i += chunkSize) {
     const chunk = canonicalData.slice(i, i + chunkSize);
@@ -112,7 +109,7 @@ export async function sendBlobTransaction(
   APIKey: string,
   privateKey: string,
   receiverAddress: string,
-  data: string
+  data: string,
 ): Promise<{
   numberOfBlobs: number;
   txHash: string;
@@ -123,8 +120,6 @@ export async function sendBlobTransaction(
   if (!APIKey || !privateKey || !receiverAddress || !data) {
     throw new Error("Missing required parameters");
   }
-  // TODO: adapt for >6 blobs => multiple transactions
-  // TODO: allow user to choose provider
   const provider = new ethers.InfuraProvider("sepolia", APIKey);
   const wallet = new ethers.Wallet(privateKey, provider);
 
@@ -148,10 +143,10 @@ export async function sendBlobTransaction(
     if (blobs.length > 6) {
       // Maximum number of blobs per transaction is 6 (as of November 2024)
       console.error(
-        "Error sending blob transaction: too many blobs (>6), currently not supported"
+        "Error sending blob transaction: too many blobs (>6), currently not supported",
       );
       throw new Error(
-        "Error sending blob transaction: too many blobs (>6), currently not supported"
+        "Error sending blob transaction: too many blobs (>6), currently not supported",
       );
     }
 
@@ -159,10 +154,10 @@ export async function sendBlobTransaction(
     const transaction = {
       type: 3, // blob transaction type
       to: receiverAddress, // send to one's self
-      maxFeePerGas: ethers.parseUnits("80", "gwei"),
+      maxFeePerGas: ethers.parseUnits("10", "gwei"),
       maxPriorityFeePerGas: ethers.parseUnits("10", "gwei"),
       gasLimit: 500000,
-      maxFeePerBlobGas: ethers.parseUnits("100", "gwei"),
+      maxFeePerBlobGas: ethers.parseUnits("50", "wei"),
       blobs: blobs,
     };
     emitter?.emit("progress", { step: "constructTx", status: "completed" });
@@ -178,7 +173,7 @@ export async function sendBlobTransaction(
     const tx = await wallet.sendTransaction(transaction);
     console.log(`Sending TX ${tx.hash}, waiting for confirmation...`);
 
-    let metrics = {
+    const metrics = {
       txHash: tx.hash,
       blockNumber: 0,
       from: tx.from,

@@ -7,10 +7,9 @@ import {
 import { connectToDb } from "@/db/database";
 import { StatusEntry } from "@/models/statusEntry";
 import { sendBlobTransaction } from "@/utils/blob";
-import { randomString } from "@/utils/random-string";
 import { AccountId } from "caip";
 import * as process from "node:process";
-import { constructBFC, toDataHexString } from "padded-bloom-filter-cascade";
+import { CRSetCascade, random256BitHexString } from "crset-cascade";
 import { emitter } from "../index";
 import { insertBfcLog } from "./bfcLogsService";
 
@@ -18,18 +17,18 @@ import { insertBfcLog } from "./bfcLogsService";
 export async function createStatusEntry(): Promise<StatusEntry | null> {
   try {
     const db = connectToDb();
-    // Generates a unique ID for a new status entry
     const statusPublisher = new AccountId({
       chainId: "eip155:1",
       address: process.env.ADDRESS!,
     }).toString();
-    const id = statusPublisher + ":" + randomString();
-    const insertedID = await insertStatusEntry(db, id, 1);
+    const revocationID = random256BitHexString();
+    const id = statusPublisher + ":" + revocationID;
+    const insertedID = await insertStatusEntry(db, revocationID, 1);
 
     if (insertedID) {
       return {
         id,
-        type: "BFCStatusEntry",
+        type: "CRSetEntry",
         statusPurpose: "revocation",
       };
     }
@@ -68,10 +67,9 @@ export async function getStatusByIDForUsers(id: string): Promise<boolean> {
   return false;
 }
 
-// Publish BFC
 export async function publishBFC(): Promise<{
   success: boolean;
-  filter: any[];
+  logId?: number;
 }> {
   try {
     emitter?.emit("progress", { step: "queryDB", status: "started" });
@@ -87,21 +85,23 @@ export async function publishBFC(): Promise<{
       },
     });
 
-    // Calculate optimal rHat: rHat >= validSet.size AND rHat >= invalidSet.size / 2 (see pseudo code)
-    const rHat =
-      validSet.size > invalidSet.size / 2 ? validSet.size : invalidSet.size / 2;
+    const rHat = parseInt(process.env.VALID_CAPACITY || "4096", 10);
 
     emitter?.emit("progress", { step: "constructBFC", status: "started" });
     const startTimeConstruction = performance.now();
-    const [serializedBFC, salt] = constructBFC(validSet, invalidSet, rHat);
+
+    const cascade = CRSetCascade.fromSets(validSet, invalidSet, rHat);
+
     emitter?.emit("progress", {
       step: "constructBFC",
       status: "completed",
-      additionalMetrics: { levelCount: serializedBFC.length },
+      additionalMetrics: { levelCount: cascade.getDepth() },
     });
     emitter?.emit("progress", { step: "serializeBFC", status: "started" });
     const endTimeConstruction = performance.now();
-    const serializedData = toDataHexString([serializedBFC, salt]);
+
+    const serializedData = cascade.toDataHexString();
+
     emitter?.emit("progress", {
       step: "serializeBFC",
       status: "completed",
@@ -115,24 +115,23 @@ export async function publishBFC(): Promise<{
       process.env.INFURA_API_KEY!,
       process.env.PRIVATE_KEY!,
       process.env.ADDRESS!,
-      serializedData
+      serializedData,
     ).catch((error: Error) => {
       console.error("Error publishing BFC:", error);
       return undefined;
     });
-
     const endTimePublishing = performance.now();
 
     if (result) {
-      insertBfcLog(db, {
+      const logId = await insertBfcLog(db, {
         validIdsSize: validSet.size,
         invalidIdsSize: invalidSet.size,
         serializedDataSize: Math.ceil(serializedData.length / 2), // in bytes
         constructionTimeInSec: Number(
-          ((endTimeConstruction - startTimeConstruction) / 1000).toFixed(4)
+          ((endTimeConstruction - startTimeConstruction) / 1000).toFixed(4),
         ),
         publicationTimeInSec: Number(
-          ((endTimePublishing - startTimePublishing) / 1000).toFixed(4)
+          ((endTimePublishing - startTimePublishing) / 1000).toFixed(4),
         ),
         numberOfBlobs: result.numberOfBlobs,
         transactionHash: result.txHash,
@@ -140,16 +139,16 @@ export async function publishBFC(): Promise<{
         publicationTimestamp: new Date().toISOString(),
         transactionCost: result.transactionCost,
         calldataTotalCost: result.callDataTotalCost,
-        numberOfBfcLayers: serializedBFC.length as number,
+        numberOfBfcLayers: cascade.getDepth(),
         rHat: rHat,
       });
-      return { success: true, filter: serializedBFC };
+      return { success: true, logId: logId };
     } else {
       console.log("Result from publishing is missing");
-      return { success: false, filter: serializedBFC };
+      return { success: false };
     }
   } catch (error) {
     console.error("Error querying the database:", error);
-    return { success: false, filter: [] };
+    return { success: false };
   }
 }

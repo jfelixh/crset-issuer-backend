@@ -3,7 +3,7 @@ import { Database } from "sqlite3";
 
 export async function getIdsByStatus(
   db: Database,
-  status: 0 | 1
+  status: 0 | 1,
 ): Promise<Set<string>> {
   return new Promise((resolve, reject) => {
     const ids = new Set<string>();
@@ -17,11 +17,9 @@ export async function getIdsByStatus(
           reject(err);
           return;
         }
-
-        // Populate the Set with emails
         rows.forEach((row) => ids.add(row.id));
         resolve(ids);
-      }
+      },
     );
   });
 }
@@ -38,11 +36,10 @@ export async function getStatusById(db: Database, id: string): Promise<number> {
           return;
         }
         if (!row) {
-          console.log("No row found");
-          reject("Not found id in the database");
+          reject("Id not found: " + id);
         }
         resolve(row.status);
-      }
+      },
     );
   });
 }
@@ -50,7 +47,7 @@ export async function getStatusById(db: Database, id: string): Promise<number> {
 export async function updateStatusById(
   db: Database,
   id: string,
-  status: 0 | 1
+  status: 0 | 1,
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     db.run(
@@ -63,7 +60,7 @@ export async function updateStatusById(
           return;
         }
         resolve();
-      }
+      },
     );
   });
 }
@@ -71,7 +68,7 @@ export async function updateStatusById(
 export async function patchStatusById(
   db: Database,
   id: string,
-  status: 0 | 1
+  status: 0 | 1,
 ): Promise<boolean> {
   return new Promise((resolve, reject) => {
     db.run(
@@ -89,7 +86,7 @@ export async function patchStatusById(
         } else {
           resolve(false);
         }
-      }
+      },
     );
   });
 }
@@ -97,7 +94,7 @@ export async function patchStatusById(
 export async function insertStatusEntry(
   db: Database,
   id: string,
-  status: 0 | 1
+  status: 0 | 1,
 ): Promise<string> {
   return new Promise((resolve, reject) => {
     db.run(
@@ -110,7 +107,7 @@ export async function insertStatusEntry(
           return "";
         }
         resolve(id);
-      }
+      },
     );
   });
 }
