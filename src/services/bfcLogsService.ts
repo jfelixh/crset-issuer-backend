@@ -1,5 +1,6 @@
 import { BfcLogData } from "@/models/bfcLogs";
 import { Database } from "sqlite3";
+import sqlite3 from "sqlite3";
 
 /**
  * Inserts a new BFC log entry into the database
@@ -7,7 +8,7 @@ import { Database } from "sqlite3";
  * @returns {Promise<string>} The last inserted ID or an error
  */
 export function insertBfcLog(db: Database, logData: BfcLogData) {
-  return new Promise((resolve, reject) => {
+  return new Promise<number>((resolve, reject) => {
     const query = `INSERT INTO bfcLogs (validIdsSize, invalidIdsSize, serializedDataSize, constructionTimeInSec, publicationTimeInSec, numberOfBlobs, transactionHash, blobVersionedHash, publicationTimestamp, transactionCost, calldataTotalCost, numberOfBfcLayers, rHat)
                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
@@ -28,7 +29,7 @@ export function insertBfcLog(db: Database, logData: BfcLogData) {
         logData.numberOfBfcLayers,
         logData.rHat,
       ],
-      function (err: Error) {
+      function (this: sqlite3.RunResult, err: Error) {
         if (err) {
           console.error("Error inserting BFC log entry:", err.message);
           reject(err);

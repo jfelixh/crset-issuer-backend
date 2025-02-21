@@ -10,7 +10,7 @@ import { sendBlobTransaction } from "@/utils/blob";
 import { randomString } from "@/utils/random-string";
 import { AccountId } from "caip";
 import * as process from "node:process";
-import { constructBFC, toDataHexString } from "crset-cascade";
+import { CRSetCascade } from "crset-cascade";
 import { emitter } from "../index";
 import { insertBfcLog } from "./bfcLogsService";
 
@@ -71,7 +71,7 @@ export async function getStatusByIDForUsers(id: string): Promise<boolean> {
 
 export async function publishBFC(): Promise<{
   success: boolean;
-  filter: { bits: Int32Array; n: number; k: number }[];
+  logId?: number;
 }> {
   try {
     emitter?.emit("progress", { step: "queryDB", status: "started" });
@@ -91,15 +91,19 @@ export async function publishBFC(): Promise<{
 
     emitter?.emit("progress", { step: "constructBFC", status: "started" });
     const startTimeConstruction = performance.now();
-    const [cascade, salt] = constructBFC(validSet, invalidSet, rHat);
+
+    const cascade = CRSetCascade.fromSets(validSet, invalidSet, rHat);
+
     emitter?.emit("progress", {
       step: "constructBFC",
       status: "completed",
-      additionalMetrics: { levelCount: cascade.length },
+      additionalMetrics: { levelCount: cascade.getDepth() },
     });
     emitter?.emit("progress", { step: "serializeBFC", status: "started" });
     const endTimeConstruction = performance.now();
-    const serializedData = toDataHexString([cascade, salt]);
+
+    const serializedData = cascade.toDataHexString();
+
     emitter?.emit("progress", {
       step: "serializeBFC",
       status: "completed",
@@ -118,11 +122,10 @@ export async function publishBFC(): Promise<{
       console.error("Error publishing BFC:", error);
       return undefined;
     });
-
     const endTimePublishing = performance.now();
 
     if (result) {
-      insertBfcLog(db, {
+      const logId = await insertBfcLog(db, {
         validIdsSize: validSet.size,
         invalidIdsSize: invalidSet.size,
         serializedDataSize: Math.ceil(serializedData.length / 2), // in bytes
@@ -138,16 +141,16 @@ export async function publishBFC(): Promise<{
         publicationTimestamp: new Date().toISOString(),
         transactionCost: result.transactionCost,
         calldataTotalCost: result.callDataTotalCost,
-        numberOfBfcLayers: cascade.length as number,
+        numberOfBfcLayers: cascade.getDepth(),
         rHat: rHat,
       });
-      return { success: true, filter: cascade };
+      return { success: true, logId: logId };
     } else {
       console.log("Result from publishing is missing");
-      return { success: false, filter: cascade };
+      return { success: false };
     }
   } catch (error) {
     console.error("Error querying the database:", error);
-    return { success: false, filter: [] };
+    return { success: false };
   }
 }
