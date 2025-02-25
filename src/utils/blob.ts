@@ -142,9 +142,6 @@ export async function sendBlobTransaction(
 
     if (blobs.length > 6) {
       // Maximum number of blobs per transaction is 6 (as of November 2024)
-      console.error(
-        "Error sending blob transaction: too many blobs (>6), currently not supported",
-      );
       throw new Error(
         "Error sending blob transaction: too many blobs (>6), currently not supported",
       );
@@ -154,10 +151,9 @@ export async function sendBlobTransaction(
     const transaction = {
       type: 3, // blob transaction type
       to: receiverAddress, // send to one's self
-      maxFeePerGas: ethers.parseUnits("10", "gwei"),
-      maxPriorityFeePerGas: ethers.parseUnits("10", "gwei"),
+      maxFeePerGas: ethers.parseUnits(process.env.MAX_GAS_FEE!, "gwei"),
       gasLimit: 500000,
-      maxFeePerBlobGas: ethers.parseUnits("50", "wei"),
+      maxFeePerBlobGas: ethers.parseUnits(process.env.MAX_BLOB_FEE!, "gwei"),
       blobs: blobs,
     };
     emitter?.emit("progress", { step: "constructTx", status: "completed" });

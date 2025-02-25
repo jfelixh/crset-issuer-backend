@@ -1,6 +1,6 @@
 # CRSet Issuer Backend
 
-A backend service that handles W3C Verifiable Credentials and their revocation status for credential issuers. This service is meant to be used in conjunction with the `issuer-demo` in [bfc-status-demo](https://github.com/jfelixh/bfc-status-demo) and is part of the demo for the paper **[CRSet: Non-Interactive Verifiable Credential Revocation with Metadata Privacy for Issuers and Everyone Else](https://arxiv.org/abs/2501.17089)**, which introduces a novel approach for handling the revocation of Verifiable Credentials.
+This backend service handles the revocation status of W3C Verifiable Credentials according to the CRSet mechanism proposed in **[CRSet: Non-Interactive Verifiable Credential Revocation with Metadata Privacy for Issuers and Everyone Else](https://arxiv.org/abs/2501.17089)**. It handles creating new credential status entries, revoking them, building the status info as a Bloom filter cascade, and publishing it via blob-carrying Ethereum transaction. Thus, it covers all functionality an issuer needs to adopt CRSet.
 
 Note that this server enforces no access control. It is meant to be used in a protected network environment.
 
@@ -69,6 +69,7 @@ Interactive API documentation is available via Swagger UI at `http://localhost:5
 
 - ![arXiv](https://img.shields.io/badge/arXiv-2501.17089-b31b1b.svg) **[CRSet: Non-Interactive Verifiable Credential Revocation with Metadata Privacy for Issuers and Everyone Else](https://arxiv.org/abs/2501.17089)**  
   _Hoops et al., 2025._
-- ![GitHub](https://img.shields.io/badge/GitHub-bfc--status--demo-blue?logo=github) **[bfc-status-demo](https://github.com/jfelixh/bfc-status-demo)**
+- ![GitHub](https://img.shields.io/badge/GitHub-crset--demo-blue?logo=github) **[crset-demo](https://github.com/jfelixh/crset-demo)**
 - **[W3C Verifiable Credentials Data Model 1.1](https://www.w3.org/TR/vc-data-model/)**
-- ![GitHub](https://img.shields.io/badge/GitHub-padded--bloom--filter--cascade-blue?logo=github) **[padded-bloom-filter-cascade](https://github.com/jfelixh/padded-bloom-filter-cascade/blob/main/README.md)**
+- **[EIP-4844: Shard Blob Transactions](https://eips.ethereum.org/EIPS/eip-4844)**
+- ![GitHub](https://img.shields.io/badge/GitHub-crset--cascade-blue?logo=github) **[crset-cascade](https://github.com/jfelixh/crset-cascade/blob/main/README.md)**
