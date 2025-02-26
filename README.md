@@ -65,6 +65,10 @@ The server uses an `EventEmitter` to send live progress updates to clients when 
 
 Interactive API documentation is available via Swagger UI at `http://localhost:5050/api-docs` when running the service.
 
+## Acknowledgments
+
+We thank the Ethereum Foundation for funding this work with an Ethereum Academic Grant under reference number FY24-1545.
+
 ## Links and References
 
 - ![arXiv](https://img.shields.io/badge/arXiv-2501.17089-b31b1b.svg) **[CRSet: Non-Interactive Verifiable Credential Revocation with Metadata Privacy for Issuers and Everyone Else](https://arxiv.org/abs/2501.17089)**  
